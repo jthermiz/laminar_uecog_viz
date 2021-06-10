@@ -21,6 +21,7 @@ import numpy as np
 import tdt
 import os
 import warnings 
+from process_nwb.wavelet_transform import wavelet_transform
 warnings.simplefilter("ignore")
 
 
@@ -163,6 +164,83 @@ def plot_zscores(data_for_trial_list, chs, onset_start, onset_stop, fs, animal_b
         plt.yticks(fontsize=10)
         
     plt.suptitle('{} Z-Scores Across Channels'.format(animal_block), fontsize=60, y=1)
+    
+#%% spectrogram/high gamma functions
+
+def get_trials_mat(signal, markers, pre_buf=10000, post_buf=10000):
+    """Returns trial matrix
+    Args:
+        signal (np.array): Signal vector
+        markers (list): List of trial onset in samples
+        pre_buf (int, optional): Number of samples to pull prior to baseline. Defaults to 10000.
+        post_buf (int, optional): Number of samples to pull after. Defaults to 10000.
+    Returns:
+        trials_mat (np.array): Trial matrix samples by trials
+    """
+    nsamples = post_buf + pre_buf
+    ntrials = len(markers)
+    trials_mat = np.empty((nsamples, ntrials))
+        
+    for idx, marker in enumerate(markers):
+        start_frame, end_frame = marker - pre_buf, marker + post_buf
+        trials_mat[:, idx] = signal[int(start_frame):int(end_frame)]
+    return trials_mat
+
+
+def zscore_data(tf_data, num_base_pts=200):
+    """Compute zscore across trial matrix
+    Args:
+        tf_data (nparray): Trial matrix of samples x trials
+        num_base_pts (int, optional): The first num_base_pts are used for baseline. Defaults to 200.
+    Returns:
+        tf_norm_data (nparray): Normalized trial matrix
+    """
+    # Zscore the data
+    mean = tf_data[:num_base_pts].mean(axis=0, keepdims=True)
+    std = tf_data[:num_base_pts].std(axis=0, keepdims=True)
+    tf_norm_data = (tf_data - mean) / std    
+    return tf_norm_data
+
+
+def compute_spectrogram(trials_mat, fs, pre_buf=1500, post_buf=1500, baseline=200):
+    """Computes spectrogram using wavelet transform
+    Args:
+        trials_mat (list): List of np-arrays that contain trial matrices (samples x trials)
+        fs (numeric): Sample rate
+        pre_buf (int, optional): The number of samples to include prior to sample midpoint of trials_mat. Defaults to 1500.
+        post_buf (int, optional): The number of samples to include after the sample midpoint. Defaults to 1500.
+        baseline (int, optiona): The first set of samples to include in baseline. Defaults to 200.
+    Returns:
+        Xnorm, f (nparray, nparray): Returns zscored wavelet magnitude coefficients and corresponding frequencies
+    """
+    Xh, _, f, _  = wavelet_transform(trials_mat, rate=fs, filters='rat', hg_only=False)
+    n = Xh.shape[0] // 2
+    Xh = Xh[(n - pre_buf):(n + post_buf), :, :] #throw away edges bc of possible effect affects
+    Xh = Xh[:, :, 10:] #throw away low frequencies
+    f = f[10:]
+    Xm = abs(Xh) #take abs value
+    Xnorm = zscore_data(Xm, baseline) #zscore 
+    return Xnorm, f
+
+def compute_hg(Xnorm, end_timepoint_baseline=200):
+    """Computes hg using wavelet transform
+    Args:
+        trials_mat (list): List of np-arrays that contain trial matrices (samples x trials)
+        fs (numeric): Sample rate
+        pre_buf (int, optional): The number of samples to include prior to sample midpoint of trials_mat. Defaults to 1500.
+        post_buf (int, optional): The number of samples to include after the sample midpoint. Defaults to 1500.
+        baseline (int, optiona): The first set of samples to include in baseline. Defaults to 200.
+    Returns:
+        Xnorm, f (nparray, nparray): Returns zscored wavelet magnitude coefficients and corresponding frequencies
+    """
+    tf_data = abs(Xnorm)
+    mean = tf_data[:end_timepoint_baseline].mean(axis=0, keepdims=True)
+    std = tf_data[:end_timepoint_baseline].std(axis=0, keepdims=True)
+    tf_norm_data = (tf_data - mean) / std
+    high_gamma = tf_norm_data.mean(axis=-1)
+    return high_gamma
+
+
 
 #%%
 data_directory = "/Users/macproizzy/Desktop/Raw_signal/RVG02_B01/"
