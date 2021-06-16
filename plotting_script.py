@@ -21,6 +21,7 @@ import numpy as np
 import tdt
 import os
 import warnings 
+from process_nwb.wavelet_transform import wavelet_transform
 warnings.simplefilter("ignore")
 
 
@@ -163,6 +164,159 @@ def plot_zscores(data_for_trial_list, chs, onset_start, onset_stop, fs, animal_b
         plt.yticks(fontsize=10)
         
     plt.suptitle('{} Z-Scores Across Channels'.format(animal_block), fontsize=60, y=1)
+    
+#%% spectrogram/high gamma functions
+
+def process_and_plot(data_directory, chs, pre_buf=10000, post_buf=10000):
+    tdt_data = tdt.read_block(data_directory)
+    fs = tdt_data['streams']['Wave']['fs']
+    fs_stim_delay = 0.25 * fs
+    wave_data = tdt_data.streams.Wave.data.T
+    markers = tdt_data.epocs.mark.onset
+    marker_onsets = [int(x*fs+fs_stim_delay) for x in markers] 
+    
+    plot_spectrogram_matrix(wave_data, fs, chs, marker_onsets, nrow = 2, ncol = 8)
+   #getting high gamma response
+    
+
+def get_trials_mat(signal, markers, pre_buf=10000, post_buf=10000):
+    """Returns trial matrix
+    Args:
+        signal (np.array): Signal vector
+        markers (list): List of trial onset in samples
+        pre_buf (int, optional): Number of samples to pull prior to baseline. Defaults to 10000.
+        post_buf (int, optional): Number of samples to pull after. Defaults to 10000.
+    Returns:
+        trials_mat (np.array): Trial matrix samples by trials
+    """
+    nsamples = post_buf + pre_buf
+    ntrials = len(markers)
+    trials_mat = np.empty((nsamples, ntrials))
+        
+    for idx, marker in enumerate(markers):
+        start_frame, end_frame = marker - pre_buf, marker + post_buf
+        trials_mat[:, idx] = signal[int(start_frame):int(end_frame)]
+    return trials_mat
+
+
+def zscore_data(tf_data, num_base_pts=200):
+    """Compute zscore across trial matrix
+    Args:
+        tf_data (nparray): Trial matrix of samples x trials
+        num_base_pts (int, optional): The first num_base_pts are used for baseline. Defaults to 200.
+    Returns:
+        tf_norm_data (nparray): Normalized trial matrix
+    """
+    # Zscore the data
+    mean = tf_data[:num_base_pts].mean(axis=0, keepdims=True)
+    std = tf_data[:num_base_pts].std(axis=0, keepdims=True)
+    tf_norm_data = (tf_data - mean) / std    
+    return tf_norm_data
+
+
+def compute_spectrogram(trials_mat, fs, pre_buf=1500, post_buf=1500, baseline=200):
+    """Computes spectrogram using wavelet transform
+    Args:
+        trials_mat (list): List of np-arrays that contain trial matrices (samples x trials)
+        fs (numeric): Sample rate
+        pre_buf (int, optional): The number of samples to include prior to sample midpoint of trials_mat. Defaults to 1500.
+        post_buf (int, optional): The number of samples to include after the sample midpoint. Defaults to 1500.
+        baseline (int, optiona): The first set of samples to include in baseline. Defaults to 200.
+    Returns:
+        Xnorm, f (nparray, nparray): Returns zscored wavelet magnitude coefficients and corresponding frequencies
+    """
+    Xh, _, f, _  = wavelet_transform(trials_mat, rate=fs, filters='rat', hg_only=False)
+    n = Xh.shape[0] // 2
+    Xh = Xh[(n - pre_buf):(n + post_buf), :, :] #throw away edges bc of possible effect affects
+    Xh = Xh[:, :, 10:] #throw away low frequencies
+    f = f[10:]
+    Xm = abs(Xh) #take abs value
+    Xnorm = zscore_data(Xm, baseline) #zscore 
+    return Xnorm, f
+
+def compute_hg(Xnorm, end_timepoint_baseline=200):
+    """Computes hg using wavelet transform
+    Args:
+        Xnorm: zscored wavelet magnitude coefficients
+        end_timepoint_baseline (int): end timepoint for the baseline period
+    
+    Returns:
+        high gamma: the high gamma response 
+    """
+    tf_data = abs(Xnorm)
+    mean = tf_data[:end_timepoint_baseline].mean(axis=0, keepdims=True)
+    std = tf_data[:end_timepoint_baseline].std(axis=0, keepdims=True)
+    tf_norm_data = (tf_data - mean) / std
+    high_gamma = tf_norm_data.mean(axis=-1)
+    return high_gamma
+
+def plot_high_gamma(high_gamma, channel):
+    """ Plots previously computed high gamma response
+            high_gamma (list or array): timepoints x channels data structure containing the high gamma response
+            channels: channels to plot
+    """ 
+    timepoints = len(high_gamma)
+    t = np.linspace(0, timepoints, timepoints)
+    fig, axs = plt.subplots(5, 1, sharex=True, sharey=True, figsize=(20, 20))
+    fig.subplots_adjust(hspace=0.4)
+    fig.tight_layout()
+    sig = high_gamma[:, channel]
+    axs[channel-1].plot(t, sig)
+    axs[channel-1].set_title('Channel {0:.0f}'.format(channel))
+    axs[channel-1].set_ylabel('σ')
+    axs[channel-1].set_ylim(-1, 6)
+    
+def plot_spectrogram(tf_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, zero_flag=False):
+    """Plots spectrogram
+    Args:
+        tf_data (nparray): Trial matrix samples x trials
+        f (nparray): Frequency vector
+        tmin (np.float): X-axis min display time (whatever is specified is what the x-axis will be label irrespective if it is correct)
+        tmax (np.float): X-axis max display time (whatever is specified is what the x-axis will be label irrespective if it is correct)
+        colorbar (bool, optional): Whether to plot colorbar. Defaults to False.
+        ax (class, optional): Matplotlib axes handle. Defaults to None.
+        fig (class, optional): Matplotlib figure handle. Defaults to None.
+    """
+    #tf_data: samples x frequencies
+    if (ax is None) or (fig is None):
+        fig, ax = plt.subplots(1, 1)
+    pos = ax.imshow(tf_data.T, interpolation='none', aspect=1/10, vmin=0, vmax=10, cmap='binary', 
+                    origin='lower', extent=[tmin, tmax, f[0], f[-1]])
+    if zero_flag:
+        ax.plot([0 ,0], [f[0], f[-1]], 'r')
+    if colorbar:
+        fig.colorbar(pos, ax=ax)
+   
+def plot_spectrogram_matrix(data, fs, markers, chs, nrow, ncol, pre_buf=10000, post_buf=10000):
+    """Extracts trials, compute wavelet coeffients, takes median across trials and plot spectrogram matrix
+    Args:
+        data (nparray): Data matrix samples x channels
+        f (np.array): Frequency vector
+        fs (numeric): Sample rate
+        markers (list): List of trial onset times in samples
+        nrow (int): Number of rows
+        ncol (int): Number of columns
+        pre_buf (int): Number of samples to pull prior to stimulus onset
+        post_buf (int): Number of samples to pull after stimulus onset
+    """
+    fig, axs = plt.subplots(nrow, ncol, figsize=(12, 12))
+    fig.tight_layout()
+    idx = 0 #starting point for index in grid 
+    while idx < (nrow*ncol):
+        row, col = idx // ncol, idx % ncol
+        ch = chs[idx]
+        ax = axs[row, col]
+        trials_mat = get_trials_mat(data[:, ch], markers, pre_buf=pre_buf, post_buf=post_buf)
+        tf_data, f = compute_spectrogram(trials_mat, fs)
+        tf_data = np.median(tf_data, axis=1)
+        plot_spectrogram(tf_data, f, -50, 50, ax=ax, fig=fig)
+        ax.set_title("Channel {}".format(ch))
+        idx += 1
+    return fig, axs
+
+        
+
+
 
 #%%
 data_directory = "/Users/macproizzy/Desktop/Raw_signal/RVG02_B01/"
