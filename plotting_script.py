@@ -165,7 +165,7 @@ def plot_zscores(data_for_trial_list, chs, onset_start, onset_stop, fs, animal_b
         
     plt.suptitle('{} Z-Scores Across Channels'.format(animal_block), fontsize=60, y=1)
     
-#%% spectrogram/high gamma functions
+#%% spectrogram functions
 
 def process_and_plot(data_directory, chs, pre_buf=10000, post_buf=10000):
     tdt_data = tdt.read_block(data_directory)
@@ -233,38 +233,6 @@ def compute_spectrogram(trials_mat, fs, pre_buf=1500, post_buf=1500, baseline=20
     Xm = abs(Xh) #take abs value
     Xnorm = zscore_data(Xm, baseline) #zscore 
     return Xnorm, f
-
-def compute_hg(Xnorm, end_timepoint_baseline=200):
-    """Computes hg using wavelet transform
-    Args:
-        Xnorm: zscored wavelet magnitude coefficients
-        end_timepoint_baseline (int): end timepoint for the baseline period
-    
-    Returns:
-        high gamma: the high gamma response 
-    """
-    tf_data = abs(Xnorm)
-    mean = tf_data[:end_timepoint_baseline].mean(axis=0, keepdims=True)
-    std = tf_data[:end_timepoint_baseline].std(axis=0, keepdims=True)
-    tf_norm_data = (tf_data - mean) / std
-    high_gamma = tf_norm_data.mean(axis=-1)
-    return high_gamma
-
-def plot_high_gamma(high_gamma, channel):
-    """ Plots previously computed high gamma response
-            high_gamma (list or array): timepoints x channels data structure containing the high gamma response
-            channels: channels to plot
-    """ 
-    timepoints = len(high_gamma)
-    t = np.linspace(0, timepoints, timepoints)
-    fig, axs = plt.subplots(5, 1, sharex=True, sharey=True, figsize=(20, 20))
-    fig.subplots_adjust(hspace=0.4)
-    fig.tight_layout()
-    sig = high_gamma[:, channel]
-    axs[channel-1].plot(t, sig)
-    axs[channel-1].set_title('Channel {0:.0f}'.format(channel))
-    axs[channel-1].set_ylabel('σ')
-    axs[channel-1].set_ylim(-1, 6)
     
 def plot_spectrogram(tf_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, zero_flag=False):
     """Plots spectrogram
@@ -286,6 +254,20 @@ def plot_spectrogram(tf_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, 
         ax.plot([0 ,0], [f[0], f[-1]], 'r')
     if colorbar:
         fig.colorbar(pos, ax=ax)
+        
+def channel_orderer(signal_data, correct_channel_order):
+    """Puts the wave data into the order of the channels
+    Args: 
+        data: signal data in timepoints x channels
+        chs (list): the correct order of the channels"""
+    shape_wanted = signal_data.shape
+    new_data = np.empty((shape_wanted[0], shape_wanted[1]))
+    
+    for i in np.arange(shape_wanted[1]):
+        new_data[:, i] = signal_data[:, (correct_channel_order[i] - 1)]
+        print("Data for channel {} is now at index {}".format(correct_channel_order[i] - 1, i))
+        
+    return new_data
    
 def plot_spectrogram_matrix(data, fs, markers, chs, nrow, ncol, pre_buf=10000, post_buf=10000):
     """Extracts trials, compute wavelet coeffients, takes median across trials and plot spectrogram matrix
@@ -299,20 +281,20 @@ def plot_spectrogram_matrix(data, fs, markers, chs, nrow, ncol, pre_buf=10000, p
         pre_buf (int): Number of samples to pull prior to stimulus onset
         post_buf (int): Number of samples to pull after stimulus onset
     """
-    fig, axs = plt.subplots(nrow, ncol, figsize=(12, 12))
+    fig, axs = plt.subplots(nrow, ncol, figsize=(20, 20))
     fig.tight_layout()
     idx = 0 #starting point for index in grid 
     while idx < (nrow*ncol):
         row, col = idx // ncol, idx % ncol
-        ch = chs[idx]
+        #ch = chs[idx]
         ax = axs[row, col]
-        trials_mat = get_trials_mat(data[:, ch], markers, pre_buf=pre_buf, post_buf=post_buf)
+        trials_mat = get_trials_mat(data[:, idx], markers, pre_buf=pre_buf, post_buf=post_buf)
         tf_data, f = compute_spectrogram(trials_mat, fs)
         tf_data = np.median(tf_data, axis=1)
         plot_spectrogram(tf_data, f, -50, 50, ax=ax, fig=fig)
-        ax.set_title("Channel {}".format(ch))
+        ax.set_title("Channel {}".format(chs[idx]))
         idx += 1
-    return fig, axs
+    fig, axs
 
         
 
