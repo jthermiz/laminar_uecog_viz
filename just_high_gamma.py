@@ -134,7 +134,7 @@ def plot_heatmap(data_directory, channel, stream = 'Wave'):
     ax.set_xlabel("Samples")
     ax.set_ylabel("Trials")
     ax.axvline(10000)
-    sns.heatmap(high_gamma_test.T, ax = ax)        
+    sns.heatmap(high_gamma_test.T, ax = ax, robust = True)        
 
 import seaborn as sns
 data_directory = r'/Users/macproizzy/Desktop/Raw_Signal/RVG02_B01'
