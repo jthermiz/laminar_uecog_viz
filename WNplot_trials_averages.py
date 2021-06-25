@@ -5,7 +5,7 @@ Created on Tue Jun 22 17:05:54 2021
 
 @author: vanessagutierrez
 """
-
+#%%
 import matplotlib.pyplot as plt
 import numpy as np
 import tdt
@@ -13,19 +13,32 @@ import os
 import warnings 
 warnings.simplefilter("ignore")
 
+#%%
 def get_data(data_directory, stream, epoc_event):
-    """ Read data block, extracts stream data, extracts sample rate, extracts data trials.
+    '''
+    Read data block, extracts stream data, extracts sample rate, extracts data trials.
+
+    Parameters
+    ----------
+    data_directory : (path)
+        Data path
+    stream : (str)
+        Name of stream in data block
+    epoc_event : (str)
+        Name of epoc in data block
+
+    Returns
+    -------
+    stream_data : (np.array)
+        array of channels by samples
+    fs : (np.float)
+        sample rate
+    trial_list : (list)
+        list of np.arrays (trials), within an array (trial) is channels by samples
+    animal_block : (str)
+        name of animal block
+    '''
     
-    Args:
-        data_directory (path): Data path
-        stream (str): Name of stream in data block
-        epoc_event (str): Name of epoc in data block
-    Returns: 
-        stream_data (np.array): array of channels by samples
-        fs (np.float): sample rate
-        trial_list (list): list of np.arrays (trials), within an array (trial) is channels by samples
-        animal_block (str): name of animal block
-    """
     tdt_data = tdt.read_block(data_directory)
     animal_block = tdt_data.info.blockname
     stream_data = tdt_data.streams[stream].data
@@ -34,16 +47,35 @@ def get_data(data_directory, stream, epoc_event):
     trial_list = tdt_trials.streams[stream].filtered
     
     return stream_data, fs, trial_list, animal_block
-
+#%%
+def figure_folder(directory):
+    savepic = '{}/Figures'.format(directory)
+    if not os.path.exists(savepic):
+        print("Folder doesn't exist")
+        os.mkdir(savepic)
+    if os.path.exists(savepic):
+        print("Figure folder exists")
+    return savepic
+        
+#%%
 def plot_trials(trial_list, stream, fs, trials = True, mean = False): 
-    """ Plot data trials and mean of trials per channel.
+    '''
+    Plot data trials and mean of trials per channel.
+  
+    Parameters
+    ----------
+    trial_list : (list)
+        list of np.arrays (trials), within an array (trial) is channels by samples
+    stream : (str)
+        Name of stream in data block
+    fs : TYPE
+        DESCRIPTION.
+    trials : (plot, optional)
+        Whether to plot all trials. Defaults to True.
+    mean : (plot, optional)
+        Whether to plot mean of all trials. Defaults to False.
+    '''
     
-    Args:
-        trial_list (list): list of np.arrays (trials), within an array (trial) is channels by samples
-        stream (str): Name of stream in data block
-        trials(plot, optional): Whether to plot all trials. Defaults to True.
-        mean(plot, optional): Whether to plot mean of all trials. Defaults to False.
-    """
     stim_delay = 0.25
 
     if stream == "Wave":
@@ -117,10 +149,10 @@ def plot_trials(trial_list, stream, fs, trials = True, mean = False):
                 plt.xticks(fontsize=10)
                 plt.yticks(fontsize=10)
                 plt.xlabel('time (ms)', fontsize= 8)
-                plt.ylabel('Volts', fontsize= 8)
+                plt.ylabel('mV', fontsize= 8)
                 
                 
-            plt.suptitle('{} Average Trial Across Channels'.format(animal_block), fontsize=35, y=1)
+            plt.suptitle('{} Average Trial Across Channels'.format(animal_block), fontsize=38, y=1)
             
     if mean:
         trial_mat = np.zeros((tmax, len(trial_list)))
@@ -136,11 +168,14 @@ def plot_trials(trial_list, stream, fs, trials = True, mean = False):
             mean_trial = np.mean(trial_mat, axis=1)
             plt.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
             plt.xlim(first, last)
-
-data_directory = r'/Users/vanessagutierrez/Desktop/Rat/RVG06/RVG06_B3'
-directory = '/Users/vanessagutierrez/Desktop/Rat/RVG06/RVG06_B3'
+            
+#%%
+data_directory = r'/Users/vanessagutierrez/Desktop/Rat/RVG08/RVG08_B5'
+directory = '/Users/vanessagutierrez/Desktop/Rat/RVG08/RVG08_B5'
 
 wave_stream_data, wave_fs, wave_trial_list, animal_block = get_data(data_directory, 'Wave', 'mark')
+
+savepic = figure_folder(directory)
 
 f = plt.figure()
 f.set_size_inches(70, 35)
@@ -148,4 +183,6 @@ f.set_size_inches(70, 35)
 plot_trials(wave_trial_list, 'Wave', wave_fs, mean = True)
 
 plt.tight_layout()
+f.savefig("{}/{}_Average_Trial_Across_Channels.png".format(savepic, animal_block), dpi=300)
 plt.show
+# %%
