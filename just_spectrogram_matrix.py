@@ -108,7 +108,7 @@ def compute_spectrogram(trials_mat, fs, pre_buf=1500, post_buf=1500, baseline=20
     return Xnorm, f
 
 
-def plot_spectrogram(tf_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, zero_flag=False):
+def plot_spectrogram(tf_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, zero_flag=False, log_scale=True):
     """Plots spectrogram
     Args:
         tf_data (nparray): Trial matrix samples x trials
@@ -118,12 +118,22 @@ def plot_spectrogram(tf_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, 
         colorbar (bool, optional): Whether to plot colorbar. Defaults to False.
         ax (class, optional): Matplotlib axes handle. Defaults to None.
         fig (class, optional): Matplotlib figure handle. Defaults to None.
+        zero_flag (boolean, optional): Plots red line at t=0
+        log_scale (boolean, optional): Plots y-scale in base 2
     """
     #tf_data: samples x frequencies
     if (ax is None) or (fig is None):
         fig, ax = plt.subplots(1, 1)
-    pos = ax.imshow(tf_data.T, interpolation='none', aspect=1/10, vmin=0, vmax=10, cmap='binary', 
+        
+    if log_scale:
+        aspect = 10
+    else:
+        aspect = 1/5
+        
+    pos = ax.imshow(tf_data.T, interpolation='none', aspect=aspect, vmin=0, vmax=10, cmap='binary', 
                     origin='lower', extent=[tmin, tmax, f[0], f[-1]])
+    if log_scale:
+        ax.set_yscale('symlog', basey=2)
     if zero_flag:
         ax.plot([0 ,0], [f[0], f[-1]], 'r')
     if colorbar:
@@ -159,7 +169,7 @@ def plot_spectrogram_matrix(data, fs, markers, chs, nrow, ncol, pre_buf=10000, p
     
     
 ##### vars to run script
-data_directory = r'/Users/macproizzy/Desktop/Raw_Signal/RVG02_B01'
+data_directory = r'/Users/vanessagutierrez/Desktop/Rat/RVG14/RVG14_B1'
 stream = 'Wave'
 chs_ordered = [
        81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
@@ -174,10 +184,10 @@ chs_ordered = [
 
 
 new_wave_data, marker_onsets, fs = get_data(data_directory, stream)
-one_channel = new_wave_data[:, 13]
-trials_mat = get_trials_mat(one_channel, marker_onsets)
+#one_channel = new_wave_data[:, 13]
+#trials_mat = get_trials_mat(one_channel, marker_onsets)
 unscrambled = channel_orderer(new_wave_data, chs_ordered)
-plot_spectrogram_matrix(unscrambled, fs, marker_onsets, chs_ordered, nrow = 2, ncol = 16)
+plot_spectrogram_matrix(unscrambled, fs, marker_onsets, chs_ordered, nrow = 8, ncol = 16)
 
 
 
