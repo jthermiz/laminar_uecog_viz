@@ -162,32 +162,67 @@ def plot_spectrogram_matrix(data, fs, markers, chs, nrow, ncol, pre_buf=10000, p
         trials_mat = get_trials_mat(data[:, idx], markers, pre_buf=pre_buf, post_buf=post_buf)
         tf_data, f = compute_spectrogram(trials_mat, fs)
         tf_data = np.median(tf_data, axis=1)
-        plot_spectrogram(tf_data, f, -50, 50, ax=ax, fig=fig)
+        plot_spectrogram(tf_data, f, -100, 100, ax=ax, fig=fig, log_scale=False)
         ax.set_title("Channel {}".format(chs[idx]))
         idx += 1
     fig
     
     
 ##### vars to run script
-data_directory = r'/Users/vanessagutierrez/Desktop/Rat/RVG14/RVG14_B1'
-stream = 'Wave'
-chs_ordered = [
-       81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
-       82, 84, 86, 88, 90, 92, 94, 96, 99, 107, 100, 108, 116, 124, 115, 123,
-       66, 68, 70, 72, 74, 76, 78, 80, 101, 109, 102, 110, 118, 126, 117, 125,
-       65, 67, 69, 71, 73, 75, 77, 79, 103, 111, 104, 112, 120, 128, 119, 127,
-       63, 61, 59, 57, 55, 53, 51, 49, 25, 17, 26, 18, 10, 2, 9, 1,
-       64, 62, 60, 58, 56, 54, 52, 50, 27, 19, 28, 20, 12, 4, 11, 3,
-       48, 46, 44, 42, 40, 38, 36, 34, 29, 21, 30, 22, 14, 6, 13, 5,
-       47, 45, 43, 41, 39, 37, 35, 33, 31, 23, 32, 24, 16, 8, 15, 7
-       ]
+data_directory = r'/Users/vanessagutierrez/Desktop/Rat/RVG08/RVG08_B1'
+#stream = 'Wave'
+#chs_ordered = [
+#       81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
+#       82, 84, 86, 88, 90, 92, 94, 96, 99, 107, 100, 108, 116, 124, 115, 123,
+#       66, 68, 70, 72, 74, 76, 78, 80, 101, 109, 102, 110, 118, 126, 117, 125,
+#       65, 67, 69, 71, 73, 75, 77, 79, 103, 111, 104, 112, 120, 128, 119, 127,
+#       63, 61, 59, 57, 55, 53, 51, 49, 25, 17, 26, 18, 10, 2, 9, 1,
+#       64, 62, 60, 58, 56, 54, 52, 50, 27, 19, 28, 20, 12, 4, 11, 3,
+#       48, 46, 44, 42, 40, 38, 36, 34, 29, 21, 30, 22, 14, 6, 13, 5,
+#       47, 45, 43, 41, 39, 37, 35, 33, 31, 23, 32, 24, 16, 8, 15, 7
+#       ]
 
+stream = 'Poly'
+chs_ordered = [ 
+            27, 37,
+            26, 38, 
+            25, 39, 
+            24, 40, 
+            23, 41,
+            22, 42, 
+            21, 43, 
+            20, 44, 
+            19, 45, 
+            18, 46,
+            17, 47, 
+            16, 48, 
+            15, 49, 
+            14, 50, 
+            13, 51,
+            12, 52, 
+            11, 53, 
+            10, 54, 
+            9, 55, 
+            8, 56, 
+            7, 57, 
+            6, 58, 
+            5, 59, 
+            4, 60, 
+            3, 61, 
+            2, 62, 
+            1, 63, 
+            28, 64, 
+            29, 36, 
+            30, 35, 
+            31, 34, 
+            32, 33,
+            ]
 
 new_wave_data, marker_onsets, fs = get_data(data_directory, stream)
 #one_channel = new_wave_data[:, 13]
 #trials_mat = get_trials_mat(one_channel, marker_onsets)
 unscrambled = channel_orderer(new_wave_data, chs_ordered)
-plot_spectrogram_matrix(unscrambled, fs, marker_onsets, chs_ordered, nrow = 8, ncol = 16)
+plot_spectrogram_matrix(unscrambled, fs, marker_onsets, chs_ordered, nrow = 32, ncol = 2)
 
 
 
