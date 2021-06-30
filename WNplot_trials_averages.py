@@ -167,19 +167,32 @@ def plot_trials(trial_list, stream, fs, trials = True, mean = False):
             plt.xlim(first, last)
             
 #%%
+<<<<<<< HEAD
 data_directory = r'/Users/vanessagutierrez/Desktop/Rat/RVG08/RVG08_B5'
 directory = '/Users/vanessagutierrez/Desktop/Rat/RVG08/RVG08_B5'
 izzy_directory = r'/Users/macproizzy/Desktop/Raw_Signal/RVG02_B01'
 wave_stream_data, wave_fs, wave_trial_list, animal_block = get_data(izzy_directory, 'Wave', 'mark')
 
 savepic = figure_folder('/Users/macproizzy/Desktop')
+=======
+data_directory = r'/Users/vanessagutierrez/Desktop/Rat/RVG15/RVG15_B3'
+directory = '/Users/vanessagutierrez/Desktop/Rat/RVG15/RVG15_B3'
+
+#wave_stream_data, wave_fs, wave_trial_list, animal_block = get_data(data_directory, 'Wave', 'mark')
+poly_stream_data, poly_fs, poly_trial_list, animal_block = get_data(data_directory, 'Poly', 'mark')
+
+savepic = figure_folder(directory)
+>>>>>>> c5358057f1371d21356150229a34f339dc6f6cb5
 
 f = plt.figure()
-f.set_size_inches(70, 35)
+#f.set_size_inches(70, 35)
+f.set_size_inches(8, 80)
 
-plot_trials(wave_trial_list, 'Wave', wave_fs, mean = True)
+
+#plot_trials(wave_trial_list, 'Wave', wave_fs, mean = True)
+plot_trials(poly_trial_list, 'Poly', poly_fs, mean = True)
 
 plt.tight_layout()
-f.savefig("{}/{}_Average_Trial_Across_Channels.png".format(savepic, animal_block), dpi=300)
+f.savefig("{}/{}_POLYAverage_Trial_Across_Channels.png".format(savepic, animal_block), dpi=300)
 plt.show
 # %%
