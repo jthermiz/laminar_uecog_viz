@@ -69,7 +69,7 @@ def channel_orderer(signal_data, correct_channel_order):
     
     for i in np.arange(shape_wanted[1]):
         new_data[:, i] = signal_data[:, (correct_channel_order[i] - 1)]
-        print("Data for channel {} is now at index {}".format(correct_channel_order[i] - 1, i))
+        #print("Data for channel {} is now at index {}".format(correct_channel_order[i] - 1, i))
     return new_data
 
 
@@ -169,25 +169,25 @@ def plot_spectrogram_matrix(data, fs, markers, chs, nrow, ncol, pre_buf=10000, p
     
     
 ##### vars to run script
-data_directory = r'/Users/vanessagutierrez/Desktop/Rat/RVG14/RVG14_B1'
-stream = 'Wave'
-chs_ordered = [
-       81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
-       82, 84, 86, 88, 90, 92, 94, 96, 99, 107, 100, 108, 116, 124, 115, 123,
-       66, 68, 70, 72, 74, 76, 78, 80, 101, 109, 102, 110, 118, 126, 117, 125,
-       65, 67, 69, 71, 73, 75, 77, 79, 103, 111, 104, 112, 120, 128, 119, 127,
-       63, 61, 59, 57, 55, 53, 51, 49, 25, 17, 26, 18, 10, 2, 9, 1,
-       64, 62, 60, 58, 56, 54, 52, 50, 27, 19, 28, 20, 12, 4, 11, 3,
-       48, 46, 44, 42, 40, 38, 36, 34, 29, 21, 30, 22, 14, 6, 13, 5,
-       47, 45, 43, 41, 39, 37, 35, 33, 31, 23, 32, 24, 16, 8, 15, 7
-       ]
+#data_directory = r'/Users/vanessagutierrez/Desktop/Rat/RVG14/RVG14_B1'
+#stream = 'Wave'
+#chs_ordered = [
+ #      81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
+  #     82, 84, 86, 88, 90, 92, 94, 96, 99, 107, 100, 108, 116, 124, 115, 123,
+   #    66, 68, 70, 72, 74, 76, 78, 80, 101, 109, 102, 110, 118, 126, 117, 125,
+    #   65, 67, 69, 71, 73, 75, 77, 79, 103, 111, 104, 112, 120, 128, 119, 127,
+     #  63, 61, 59, 57, 55, 53, 51, 49, 25, 17, 26, 18, 10, 2, 9, 1,
+      # 64, 62, 60, 58, 56, 54, 52, 50, 27, 19, 28, 20, 12, 4, 11, 3,
+       #48, 46, 44, 42, 40, 38, 36, 34, 29, 21, 30, 22, 14, 6, 13, 5,
+       #47, 45, 43, 41, 39, 37, 35, 33, 31, 23, 32, 24, 16, 8, 15, 7
+  #     ]
 
 
-new_wave_data, marker_onsets, fs = get_data(data_directory, stream)
+#new_wave_data, marker_onsets, fs = get_data(data_directory, stream)
 #one_channel = new_wave_data[:, 13]
 #trials_mat = get_trials_mat(one_channel, marker_onsets)
-unscrambled = channel_orderer(new_wave_data, chs_ordered)
-plot_spectrogram_matrix(unscrambled, fs, marker_onsets, chs_ordered, nrow = 8, ncol = 16)
+#unscrambled = channel_orderer(new_wave_data, chs_ordered)
+#plot_spectrogram_matrix(unscrambled, fs, marker_onsets, chs_ordered, nrow = 8, ncol = 16)
 
 
 

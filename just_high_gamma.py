@@ -33,6 +33,7 @@ import numpy as np
 import tdt
 import os
 import warnings 
+import seaborn as sns
 from process_nwb.wavelet_transform import wavelet_transform
 warnings.simplefilter("ignore")
 
@@ -80,7 +81,7 @@ def compute_high_gamma(trials_mat, fs, pre_buf=10000, post_buf=10000, baseline=2
         post_buf (int, optional): The number of samples to include after the sample midpoint. Defaults to 10000.
         baseline (int, optiona): The first set of samples to include in baseline. Defaults to 200.
     Returns:
-        Xnorm, f (nparray, nparray): Returns zscored wavelet magnitude coefficients and corresponding frequencies
+        high_gamma: Returns zscored wavelet magnitude coefficients at high gamma frequencies, smaples x trials
     """
     Xh, _, f, _  = wavelet_transform(trials_mat, rate=fs, filters='rat', hg_only=True)
     n = Xh.shape[0] // 2
@@ -109,18 +110,65 @@ def get_data(data_directory, stream, stim_delay = .25):
     marker_onsets = [int(x*fs+fs_stim_delay) for x in markers] 
     return new_wave_data, marker_onsets, fs
 
-def plot_high_gamma(data_directory, channel, trial, stream = 'Wave'):
+def plot_high_gamma(data_directory, channel, trial, stream = 'Wave', fig = None, ax = None):
+    new_wave_data, marker_onsets, fs = get_data(data_directory, stream)
+    trials_mat_test = get_trials_mat(new_wave_data[:, channel], marker_onsets)
+    high_gamma_test = compute_high_gamma(trials_mat_test, fs)
+    x_axis = np.linspace(-10000, 10000, 20000)
+    
+    if fig == None and ax == None:
+        fig, ax = plt.subplots()
+    ax.plot(x_axis, high_gamma_test[:, trial], color = "k")
+    ax.set_title("Channel {} High Gamma Response: Trial {}".format(channel, trial))
+    ax.set_xlabel("Timepoints (Samples?)")
+    ax.set_ylabel("Zscored High Gamma Response Coefficient")
+    ax.axvline(0, ymin = min(high_gamma_test[:, trial]), ymax = max(high_gamma_test[:, trial]), color = 'darksalmon')
+    fig
+    
+def plot_all_hg_response(data_directory, channel, num_trials, stream = 'Wave', single_trials = True):
+    """
+    Plots the high gamma response for one channel 
+
+    Parameters
+    ----------
+    data_directory : string
+        directory where the data lives.
+    channel : int
+        channel you want to look at.
+    num_trials : int
+        number of trials.
+    stream : TYPE, optional
+        DESCRIPTION. The default is 'Wave'.
+    single_trials : TYPE, optional
+        DESCRIPTION. The default is True. Plots single trials, otherwise plots median +- std dev
+
+    Returns
+    -------
+    Plot of high gamma response over time.
+
+    """
     new_wave_data, marker_onsets, fs = get_data(data_directory, stream)
     trials_mat_test = get_trials_mat(new_wave_data[:, channel], marker_onsets)
     high_gamma_test = compute_high_gamma(trials_mat_test, fs)
     x_axis = np.linspace(-10000, 10000, 20000)
     
     fig, ax = plt.subplots()
-    ax.plot(x_axis, high_gamma_test[:, trial], color = "k")
-    ax.set_title("Channel {} High Gamma Response: Trial {}".format(channel, trial))
-    ax.set_xlabel("Timepoints (Samples?)")
+    ax.axvline(0, ymin = -2, ymax = 500, color = 'darksalmon', zorder = 10000)
+    median = np.median(high_gamma_test, axis = -1)
+    ax.set_ylim(-15, max(median) + 50)
+    ax.plot(x_axis, median, color = 'k', zorder = 10)
+    if single_trials:
+        for i in np.arange(num_trials):
+            ax.plot(x_axis, high_gamma_test[:, i], color = 'k', alpha = .05)
+            ax.set_title("Channel {} High Gamma Response Single Trials".format(channel))
+            ax.set_xlabel("Samples(time * freq)")
+            ax.set_ylabel("Zscored High Gamma Response Coefficient")
+    else:
+        standard_dev = np.std(high_gamma_test, axis = -1)
+        ax.fill_between(x_axis, median - standard_dev, median + standard_dev, color = 'k', alpha = .1)
+    ax.set_title("Channel {} Median High Gamma Response".format(channel))
+    ax.set_xlabel("Samples(time * freq)")
     ax.set_ylabel("Zscored High Gamma Response Coefficient")
-    ax.axvline(fs*.25, ymin = min(high_gamma_test[:, trial]), ymax = max(high_gamma_test[:, trial]), color = 'darksalmon')
     fig
 
 def plot_heatmap(data_directory, channel, stream = 'Wave'):
@@ -134,16 +182,15 @@ def plot_heatmap(data_directory, channel, stream = 'Wave'):
     ax.set_xlabel("Samples")
     ax.set_ylabel("Trials")
     ax.axvline(10000)
-    sns.heatmap(high_gamma_test.T, ax = ax, robust = True)        
+    sns.heatmap(high_gamma_test.T, ax = ax, robust = True)     
+    
 
-import seaborn as sns
-data_directory = r'/Users/macproizzy/Desktop/Raw_Signal/RVG02_B01'
-plot_high_gamma(data_directory, 13, 25)
-plot_heatmap(data_directory, 13)
+plot_all_hg_response(r'/Users/macproizzy/Desktop/Raw_Signal/RVG02_B01', 13, 60, single_trials = False)
+plot_all_hg_response(r'/Users/macproizzy/Desktop/Raw_Signal/RVG02_B01', 14, 60)
 
-plot_heatmap(data_directory, 0)
-for i in np.arange(1,6):
-    plot_heatmap(data_directory, i)
+
+
+
 
 
 

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jun 22 17:05:54 2021
-
 @author: vanessagutierrez
 """
 #%%
@@ -17,7 +16,6 @@ warnings.simplefilter("ignore")
 def get_data(data_directory, stream, epoc_event):
     '''
     Read data block, extracts stream data, extracts sample rate, extracts data trials.
-
     Parameters
     ----------
     data_directory : (path)
@@ -26,7 +24,6 @@ def get_data(data_directory, stream, epoc_event):
         Name of stream in data block
     epoc_event : (str)
         Name of epoc in data block
-
     Returns
     -------
     stream_data : (np.array)
@@ -172,10 +169,10 @@ def plot_trials(trial_list, stream, fs, trials = True, mean = False):
 #%%
 data_directory = r'/Users/vanessagutierrez/Desktop/Rat/RVG08/RVG08_B5'
 directory = '/Users/vanessagutierrez/Desktop/Rat/RVG08/RVG08_B5'
+izzy_directory = r'/Users/macproizzy/Desktop/Raw_Signal/RVG02_B01'
+wave_stream_data, wave_fs, wave_trial_list, animal_block = get_data(izzy_directory, 'Wave', 'mark')
 
-wave_stream_data, wave_fs, wave_trial_list, animal_block = get_data(data_directory, 'Wave', 'mark')
-
-savepic = figure_folder(directory)
+savepic = figure_folder('/Users/macproizzy/Desktop')
 
 f = plt.figure()
 f.set_size_inches(70, 35)
