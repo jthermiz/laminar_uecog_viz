@@ -19,7 +19,6 @@ import matplotlib as mpl
 import tdt
 import os
 from process_nwb.wavelet_transform import wavelet_transform
-import tdt as tdt
 
 def get_data(data_directory, stream, stim_delay = .25):
     """Gets the data from the tdt file as specified by the stream, the markers for that data, and the frequency
@@ -245,8 +244,12 @@ new_wave_data, marker_onsets, fs = get_data(data_directory, stream)
 #one_channel = new_wave_data[:, 13]
 #trials_mat = get_trials_mat(one_channel, marker_onsets)
 unscrambled = channel_orderer(new_wave_data, chs_ordered)
+<<<<<<< HEAD
 plot_spectrogram_matrix(unscrambled, fs, marker_onsets, chs_ordered, nrow = 2, ncol = 2)
 >>>>>>> c5358057f1371d21356150229a34f339dc6f6cb5
+=======
+plot_spectrogram_matrix(unscrambled, fs, marker_onsets, chs_ordered, nrow = 3, ncol = 2)
+>>>>>>> e7704ed63fae56c0eecf8d9f246bdbff8ef73f8d
 
 
 
