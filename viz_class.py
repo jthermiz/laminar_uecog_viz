@@ -103,6 +103,9 @@ class viz:
             trials_mat[:, idx] = channel_data[int(start_frame):int(end_frame)]
         return trials_mat
     
+    
+    
+    
     def zscore_data(tf_data, num_base_pts=200):
         """Compute zscore across trial matrix
         Args:
@@ -116,6 +119,9 @@ class viz:
         std = tf_data[:num_base_pts].std(axis=0, keepdims=True)
         tf_norm_data = (tf_data - mean) / std    
         return tf_norm_data
+    
+    
+    
     
     def get_all_trials_matrices(self):
         """
@@ -133,6 +139,9 @@ class viz:
             all_trials[self.channel_order[i]] = one_channel
         self.trials_dict = all_trials
         return all_trials  
+    
+    
+    
     
     def compute_high_gamma(trials_mat, fs, pre_buf=10000, post_buf=10000, baseline=200):
         """Computes high gamma using wavelet transform
@@ -152,6 +161,9 @@ class viz:
         Xnorm = viz.zscore_data(Xm, baseline) #zscore 
         high_gamma = Xnorm.mean(axis = -1)
         return high_gamma
+    
+    
+    
     
     def plot_all_hg_response(self, channel, single_trials = False, fig = None, ax = None):
         """
@@ -203,7 +215,10 @@ class viz:
             ax.set_xlabel("Time (ms)")
             ax.set_ylabel("Zscored High Gamma Response Coefficient")
         fig
+    
         
+    
+    
     def plot_high_gamma_matrix(self, nrow, ncol):
         """Utilizes the trials dictionary to plot the high gamma responses from multiple channels in a matrix form
         Args:
@@ -228,7 +243,10 @@ class viz:
             ax.set_ylabel("High Gamma Response Coefficient")
             idx += 1
         fig
+    
         
+    
+    
     def compute_spectrogram(trials_mat, fs, pre_buf=1500, post_buf=1500, baseline=200):
         """Computes spectrogram using wavelet transform
             Args:
@@ -248,6 +266,9 @@ class viz:
         Xm = abs(Xh) #take abs value
         Xnorm = viz.zscore_data(Xm, baseline) #zscore 
         return Xnorm, f
+    
+    
+    
     
     def plot_spectrogram(spec_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, zero_flag=False, log_scale=True):
         """Plots spectrogram
@@ -279,6 +300,9 @@ class viz:
         if colorbar:
             fig.colorbar(pos, ax=ax, shrink=0.7, pad = 0.02)
             
+    
+    
+    
     
     def plot_spectrogram_matrix(self, nrow, ncol, pre_buf=10000, post_buf=10000):
         """Extracts trials, compute wavelet coeffients, takes median across trials and plot spectrogram matrix
@@ -312,10 +336,12 @@ class viz:
             idx += 1
         fig
         
+      
         
-    def plot_trials(self, trials = True, mean = False): 
-            '''
-                Plot data trials and mean of trials per channel.
+      
+        
+    def plot_trials(self, trials = True, mean = True): 
+        '''Plot data trials and mean of trials per channel.
   
                 Parameters
                 ----------
@@ -331,18 +357,18 @@ class viz:
                     Whether to plot mean of all trials. Defaults to False.
             '''
     
-            stim_delay = 0.25
-            tdt_trials = tdt.epoc_filter(self.tdt_data, 'mark')
-            trial_list = tdt_trials.streams[self.stream].filtered
-            animal_block = self.tdt_data.info.blockname
+        stim_delay = 0.25
+        tdt_trials = tdt.epoc_filter(self.tdt_data, 'mark')
+        trial_list = tdt_trials.streams[self.stream].filtered
+        animal_block = self.tdt_data.info.blockname
 
 
-            if self.stream == "Wave":
-                height = 8 
-                width = 16
-                tmax = 6000
-                first, last = 2000, 5000
-                chs = [
+        if self.stream == "Wave":
+            height = 8 
+            width = 16
+            tmax = 6000
+            first, last = 2000, 5000
+            chs = [
                     81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
                     82, 84, 86, 88, 90, 92, 94, 96, 99, 107, 100, 108, 116, 124, 115, 123,
                     66, 68, 70, 72, 74, 76, 78, 80, 101, 109, 102, 110, 118, 126, 117, 125,
@@ -352,12 +378,12 @@ class viz:
                     48, 46, 44, 42, 40, 38, 36, 34, 29, 21, 30, 22, 14, 6, 13, 5,
                     47, 45, 43, 41, 39, 37, 35, 33, 31, 23, 32, 24, 16, 8, 15, 7
                     ]
-            if self.stream == "Poly":
-                height = 32 
-                width = 2
-                tmax = 12000
-                first, last = 5500, 7000
-                chs = [ 
+        if self.stream == "Poly":
+            height = 32 
+            width = 2
+            tmax = 12000
+            first, last = 5500, 7000
+            chs = [ 
                     27, 37,
                     26, 38, 
                     25, 39, 
@@ -392,9 +418,9 @@ class viz:
                     32, 33,
                     ]
           
-            if trials:
-                for i in np.arange(len(chs)): 
-                    plt.subplot(height, width, i + 1)
+        if trials:
+            for i in np.arange(len(chs)): 
+                plt.subplot(height, width, i + 1)
 
                 for tidx, trial in enumerate(trial_list):
                     sub_trial = trial[chs[i] - 1,:tmax]
@@ -413,20 +439,20 @@ class viz:
                 
                 plt.suptitle('{} Average Trial Across Channels'.format(animal_block), fontsize=38, y=1)
             
-            if mean:
-                trial_mat = np.zeros((tmax, len(trial_list)))
+        if mean:
+            trial_mat = np.zeros((tmax, len(trial_list)))
     
-                for i in np.arange(len(chs)):
+            for i in np.arange(len(chs)):
 
-                    plt.subplot(height, width, i + 1)
+                plt.subplot(height, width, i + 1)
 
-                    for tidx, trial in enumerate(trial_list):
-                        sub_trial = trial[chs[i] - 1, :tmax]
-                        trial_mat[:, tidx] = sub_trial 
+                for tidx, trial in enumerate(trial_list):
+                    sub_trial = trial[chs[i] - 1, :tmax]
+                    trial_mat[:, tidx] = sub_trial 
 
-                    mean_trial = np.mean(trial_mat, axis=1)
-                    plt.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
-                    plt.xlim(first, last)
+                mean_trial = np.mean(trial_mat, axis=1)
+                plt.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
+                plt.xlim(first, last)
         
         
         
