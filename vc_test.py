@@ -27,11 +27,11 @@ test.get_all_trials_matrices()
 type(test.trials_dict)
 
 
-#test.plot_all_hg_response(83)
+test.plot_all_hg_response(83)
 
-#test.plot_high_gamma_matrix(2, 3)
-#test.plot_spectrogram_matrix(, 1)
-#t#est.plot_trials()
+test.plot_high_gamma_matrix(2, 3)
+test.plot_spectrogram_matrix(2,3)
+test.plot_trials()
 
 
 
