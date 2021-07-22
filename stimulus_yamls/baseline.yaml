@@ -1,0 +1,12 @@
+name: baseline
+
+type: continuous
+mark_offset: 0
+mark_threshold: 0.3
+mark_sampling_rate: 12207.03125
+duration: 0.0
+baseline_start: 0.0
+baseline_end: 0.0
+first_mark: 0.0
+
+# I copied most settings from the DMR.yaml. For first mark, I used the value of 0, but the value does not matter since there are no marks in baseline
