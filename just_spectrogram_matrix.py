@@ -130,13 +130,13 @@ def plot_spectrogram(tf_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, 
         aspect = 1/5
         
     pos = ax.imshow(tf_data.T, interpolation='none', aspect=aspect, cmap='binary', 
-                    origin='lower', extent=[tmin, tmax, f[0], f[-1]])
+                    origin='lower', extent=[tmin, tmax, f[0], f[-4]])
     if log_scale:
         ax.set_yscale('symlog', basey=2)
     if zero_flag:
         ax.plot([0 ,0], [f[0], f[-1]], 'r')
     if colorbar:
-        fig.colorbar(pos, ax=ax, shrink=0.7, pad = 0.02)
+        fig.colorbar(pos, ax=ax, fraction = .25,shrink = 0.7, pad = 0.02)
         
         
 def plot_spectrogram_matrix(data, fs, markers, chs, nrow, ncol, pre_buf=10000, post_buf=10000):
@@ -152,7 +152,6 @@ def plot_spectrogram_matrix(data, fs, markers, chs, nrow, ncol, pre_buf=10000, p
         post_buf (int): Number of samples to pull after stimulus onset
     """
     fig, axs = plt.subplots(nrow, ncol, figsize=(20, 10))
-    fig.tight_layout()
     idx = 0 #starting point for index in grid 
     while idx < (nrow*ncol):
         row, col = idx // ncol, idx % ncol
@@ -161,16 +160,17 @@ def plot_spectrogram_matrix(data, fs, markers, chs, nrow, ncol, pre_buf=10000, p
         trials_mat = get_trials_mat(data[:, idx], markers, pre_buf=pre_buf, post_buf=post_buf)
         tf_data, f = compute_spectrogram(trials_mat, fs)
         tf_data = np.median(tf_data, axis=1)
-        plot_spectrogram(tf_data, f, -10, 100, ax=ax, fig=fig, colorbar=True,log_scale=False)
-        ax.set_title("Channel {}".format(chs[idx]))
+        plot_spectrogram(tf_data, f, -100, 100, ax=ax, fig=fig, colorbar=True,log_scale=False)
+        ax.set_title("Channel {}".format(chs[idx]), fontsize = 8)
         ax.set_xlabel("Time (ms)")
 #        ax.set_ylabel("Frequency (Hz)")
         idx += 1
+    plt.tight_layout()
     fig
     
     
 ##### vars to run script
-<<<<<<< HEAD
+#<<<<<<< HEAD
 #data_directory = r'/Users/vanessagutierrez/Desktop/Rat/RVG14/RVG14_B1'
 #stream = 'Wave'
 #chs_ordered = [
@@ -190,8 +190,8 @@ def plot_spectrogram_matrix(data, fs, markers, chs, nrow, ncol, pre_buf=10000, p
 #trials_mat = get_trials_mat(one_channel, marker_onsets)
 #unscrambled = channel_orderer(new_wave_data, chs_ordered)
 #plot_spectrogram_matrix(unscrambled, fs, marker_onsets, chs_ordered, nrow = 8, ncol = 16)
-=======
-data_directory = r'/Users/vanessagutierrez/Desktop/Rat/RVG08/RVG08_B1'
+#-----
+data_directory = r'/Users/vanessagutierrez/data/Rat/RVG13/RVG13_B04'
 stream = 'Wave'
 chs_ordered = [
        81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
@@ -244,12 +244,12 @@ new_wave_data, marker_onsets, fs = get_data(data_directory, stream)
 #one_channel = new_wave_data[:, 13]
 #trials_mat = get_trials_mat(one_channel, marker_onsets)
 unscrambled = channel_orderer(new_wave_data, chs_ordered)
-<<<<<<< HEAD
+#<<<<<<< HEAD
 plot_spectrogram_matrix(unscrambled, fs, marker_onsets, chs_ordered, nrow = 2, ncol = 2)
->>>>>>> c5358057f1371d21356150229a34f339dc6f6cb5
-=======
+#>>>>>>> c5358057f1371d21356150229a34f339dc6f6cb5
+#=======
 plot_spectrogram_matrix(unscrambled, fs, marker_onsets, chs_ordered, nrow = 3, ncol = 2)
->>>>>>> e7704ed63fae56c0eecf8d9f246bdbff8ef73f8d
+#>>>>>>> e7704ed63fae56c0eecf8d9f246bdbff8ef73f8d
 
 
 
