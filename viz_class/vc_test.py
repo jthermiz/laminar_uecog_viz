@@ -8,7 +8,7 @@ Created on Wed Jun 30 17:34:23 2021
 
 import viz_class as vc
 
-RVG06_B03 = r'/Users/macproizzy/Desktop/RVG_Data/RVG06_B03'
+RVG06_B03 = r'/Users/vanessagutierrez/data/Rat/RVG06/RVG06_B03'
 stream = 'Wave'
 chs_ordered = [
        81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,

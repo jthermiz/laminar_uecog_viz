@@ -102,23 +102,23 @@ class viz:
             start_frame, end_frame = marker - pre_buf, marker + post_buf
             trials_mat[:, idx] = channel_data[int(start_frame):int(end_frame)]
         return trials_mat
+
     
     
     
-    
-    def zscore_data(tf_data, num_base_pts=200):
+    def zscore_data(trials_matrix, num_base_pts=200):
         """Compute zscore across trial matrix
         Args:
-            tf_data (nparray): Trial matrix of samples x trials
+            trials_matrix (nparray): Trial matrix of samples x trials
             num_base_pts (int, optional): The first num_base_pts are used for baseline. Defaults to 200.
         Returns:
-                tf_norm_data (nparray): Normalized trial matrix
+                tm_norm_data (nparray): Normalized trial matrix
         """
         # Zscore the data
-        mean = tf_data[:num_base_pts].mean(axis=0, keepdims=True)
-        std = tf_data[:num_base_pts].std(axis=0, keepdims=True)
-        tf_norm_data = (tf_data - mean) / std    
-        return tf_norm_data
+        mean = trials_matrix[:num_base_pts].mean(axis=0, keepdims=True)
+        std = trials_matrix[:num_base_pts].std(axis=0, keepdims=True)
+        tm_norm_data = (trials_matrix - mean) / std    
+        return tm_norm_data
     
     
     
@@ -272,7 +272,7 @@ class viz:
     
     
     
-    def plot_spectrogram(spec_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, zero_flag=False, log_scale=True):
+    def plot_spectrogram(spec_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, zero_flag=False, log_scale=False):
         """Plots spectrogram
             Args:
                 tf_data (nparray): Trial matrix samples x trials
@@ -331,7 +331,7 @@ class viz:
             trials_mat = trials_dict[channel]
             tf_data, f = viz.compute_spectrogram(trials_mat, self.fs)
             tf_data = np.median(tf_data, axis=1)
-            viz.plot_spectrogram(tf_data, f, -10, 100, ax=ax, fig=fig, colorbar=True,log_scale=False)
+            viz.plot_spectrogram(tf_data, f, -100, 100, ax=ax, fig=fig, colorbar=True,log_scale=False)
             ax.set_title("Channel {}".format(chs[idx]))
             ax.set_xlabel("Time (ms)")
 #        ax.set_ylabel("Frequency (Hz)")
