@@ -18,12 +18,13 @@ import os
 import warnings 
 import seaborn as sns
 from process_nwb.wavelet_transform import wavelet_transform
+from data_reader import data_reader
 warnings.simplefilter("ignore")
 
 
 class viz:
     
-    def __init__(self, data_directory, channel_order, stream):
+    def __init__(self, data_directory, stream, stimulus):
         """
         Init: create an instance of the viz class 
 
@@ -53,18 +54,76 @@ class viz:
             marker_onsets: markers with fs stim delay taken into consideration
 
         """
-        
+        #added stimulus parameter for the data reader class. 
         self.data_directory = data_directory
-        self.channel_order = channel_order
         self.stream = stream
-        self.tdt_data = tdt.read_block(data_directory)
-        self.fs = self.tdt_data['streams'][stream]['fs']
-        self.fs_stim_delay = .25 * self.fs
-        self.markers = self.tdt_data.epocs.mark.onset
-        self.marker_onsets = [int(x*self.fs+self.fs_stim_delay) for x in self.markers] 
+        self.stimulus = stimulus
+        if self.stream == "Wave" or "ECoG":
+            height = 8 
+            width = 16
+            tmax = 6000
+            first, last = 2000, 5000
+            channel_order = [
+                    81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
+                    82, 84, 86, 88, 90, 92, 94, 96, 99, 107, 100, 108, 116, 124, 115, 123,
+                    66, 68, 70, 72, 74, 76, 78, 80, 101, 109, 102, 110, 118, 126, 117, 125,
+                    65, 67, 69, 71, 73, 75, 77, 79, 103, 111, 104, 112, 120, 128, 119, 127,
+                    63, 61, 59, 57, 55, 53, 51, 49, 25, 17, 26, 18, 10, 2, 9, 1,
+                    64, 62, 60, 58, 56, 54, 52, 50, 27, 19, 28, 20, 12, 4, 11, 3,
+                    48, 46, 44, 42, 40, 38, 36, 34, 29, 21, 30, 22, 14, 6, 13, 5,
+                    47, 45, 43, 41, 39, 37, 35, 33, 31, 23, 32, 24, 16, 8, 15, 7
+                    ]
+        if self.stream == "Poly":
+            height = 32 
+            width = 2
+            tmax = 12000
+            first, last = 5500, 7000
+            channel_order = [ 
+                    27, 37,
+                    26, 38, 
+                    25, 39, 
+                    24, 40, 
+                    23, 41,
+                    22, 42, 
+                    21, 43, 
+                    20, 44, 
+                    19, 45, 
+                    18, 46,
+                    17, 47, 
+                    16, 48, 
+                    15, 49, 
+                    14, 50, 
+                    13, 51,
+                    12, 52, 
+                    11, 53, 
+                    10, 54, 
+                    9, 55, 
+                    8, 56, 
+                    7, 57, 
+                    6, 58, 
+                    5, 59, 
+                    4, 60, 
+                    3, 61, 
+                    2, 62, 
+                    1, 63, 
+                    28, 64, 
+                    29, 36, 
+                    30, 35, 
+                    31, 34, 
+                    32, 33,
+                    ]
+        self.channel_order = channel_order #maybe add if else loop for wave vs poly channels
+        dr = data_reader(data_directory, stream, stimulus)
+        self.signal_data, self.fs, self.stim_markers, self.animal_block = dr.get_data()
+        self.marker_onsets = dr.get_stim_onsets()
+        # self.tdt_data = tdt.read_block(data_directory)
+        # self.fs = self.tdt_data['streams'][stream]['fs']
+        # self.fs_stim_delay = .25 * self.fs
+        # self.markers = self.tdt_data.epocs.mark.onset
+        # self.marker_onsets = [int(x*self.fs+self.fs_stim_delay) for x in self.markers] 
         
-        wave_data_scrambled = self.tdt_data.streams.Wave.data
-        correct_shape_wave_data = wave_data_scrambled.T
+        # wave_data_scrambled = self.tdt_data.streams.Wave.data
+        # correct_shape_wave_data = wave_data_scrambled.T
         
         def channel_orderer(signal_data):
             """Puts the wave data into the order of the channels
@@ -78,7 +137,7 @@ class viz:
                 new_data[:, i] = signal_data[:, (self.channel_order[i] - 1)]
             return new_data
         
-        self.wave_data = channel_orderer(correct_shape_wave_data)
+        self.new_signal_data = channel_orderer(self.signal_data)
 
 
     def get_trials_matrix(self, channel, pre_buf = 10000, post_buf = 10000):
@@ -94,9 +153,9 @@ class viz:
         """
         
         nsamples = post_buf + pre_buf
-        ntrials = len(self.markers)
+        ntrials = len(self.marker_onsets)
         trials_mat = np.empty((nsamples, ntrials))
-        channel_data = self.wave_data[:, channel]
+        channel_data = self.new_signal_data[:, channel]
         
         for idx, marker in enumerate(self.marker_onsets):
             start_frame, end_frame = marker - pre_buf, marker + post_buf
@@ -123,7 +182,7 @@ class viz:
     
     
     
-    def get_all_trials_matrices(self):
+    def get_all_trials_matrices(self, pre_buf = 10000, post_buf = 10000):
         """
         Returns
         -------
@@ -135,7 +194,7 @@ class viz:
         
         all_trials = {}
         for i in np.arange(len(self.channel_order)):
-            one_channel = self.get_trials_matrix(i)
+            one_channel = self.get_trials_matrix(i, pre_buf, post_buf)
             all_trials[self.channel_order[i]] = one_channel
         self.trials_dict = all_trials
         return all_trials  
@@ -344,7 +403,7 @@ class viz:
         
       
         
-    def plot_trials(self, trials = True, mean = True): 
+    def plot_trials(self, channel, trials = True, mean = True): 
         '''Plot data trials and mean of trials per channel.
   
                 Parameters
@@ -360,103 +419,152 @@ class viz:
                 mean : (plot, optional)
                     Whether to plot mean of all trials. Defaults to False.
             '''
-    
-        stim_delay = 0.25
-        tdt_trials = tdt.epoc_filter(self.tdt_data, 'mark')
-        trial_list = tdt_trials.streams[self.stream].filtered
-        animal_block = self.tdt_data.info.blockname
-
-
-        if self.stream == "Wave":
-            height = 8 
-            width = 16
-            tmax = 6000
-            first, last = 2000, 5000
-            chs = [
-                    81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
-                    82, 84, 86, 88, 90, 92, 94, 96, 99, 107, 100, 108, 116, 124, 115, 123,
-                    66, 68, 70, 72, 74, 76, 78, 80, 101, 109, 102, 110, 118, 126, 117, 125,
-                    65, 67, 69, 71, 73, 75, 77, 79, 103, 111, 104, 112, 120, 128, 119, 127,
-                    63, 61, 59, 57, 55, 53, 51, 49, 25, 17, 26, 18, 10, 2, 9, 1,
-                    64, 62, 60, 58, 56, 54, 52, 50, 27, 19, 28, 20, 12, 4, 11, 3,
-                    48, 46, 44, 42, 40, 38, 36, 34, 29, 21, 30, 22, 14, 6, 13, 5,
-                    47, 45, 43, 41, 39, 37, 35, 33, 31, 23, 32, 24, 16, 8, 15, 7
-                    ]
-        if self.stream == "Poly":
-            height = 32 
-            width = 2
-            tmax = 12000
-            first, last = 5500, 7000
-            chs = [ 
-                    27, 37,
-                    26, 38, 
-                    25, 39, 
-                    24, 40, 
-                    23, 41,
-                    22, 42, 
-                    21, 43, 
-                    20, 44, 
-                    19, 45, 
-                    18, 46,
-                    17, 47, 
-                    16, 48, 
-                    15, 49, 
-                    14, 50, 
-                    13, 51,
-                    12, 52, 
-                    11, 53, 
-                    10, 54, 
-                    9, 55, 
-                    8, 56, 
-                    7, 57, 
-                    6, 58, 
-                    5, 59, 
-                    4, 60, 
-                    3, 61, 
-                    2, 62, 
-                    1, 63, 
-                    28, 64, 
-                    29, 36, 
-                    30, 35, 
-                    31, 34, 
-                    32, 33,
-                    ]
-          
-        if trials:
-            for i in np.arange(len(chs)): 
-                plt.subplot(height, width, i + 1)
-
-                for tidx, trial in enumerate(trial_list):
-                    sub_trial = trial[chs[i] - 1,:tmax]
-                    plt.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
-                    ymin, ymax = np.min(sub_trial), np.max(sub_trial)
-                    plt.plot([stim_delay*self.fs, stim_delay*self.fs], [ymin, ymax], 'darksalmon')
-                    plt.xlim(first, last)
-                    #     plt.plot([.3*fs, .3*fs], [ymin, ymax], 'darksalmon')
-                    plt.title('Ch. ' + str(chs[i]), fontsize= 9)
-                    plt.xticks([first, first + 1000, last - 1000, last],[-100, 0, 100, 200])
-                    plt.xticks(fontsize=10)
-                    plt.yticks(fontsize=10)
-                    plt.xlabel('time (ms)', fontsize= 8)
-                    plt.ylabel('mV', fontsize= 8)
-                
-                
-                plt.suptitle('{} Average Trial Across Channels'.format(animal_block), fontsize=20, y=1)
+        trial_list = self.trials_dict
+        
+        if isinstance(channel, list):
             
-        if mean:
-            trial_mat = np.zeros((tmax, len(trial_list)))
+            if trials:
+                for i in np.arange(len(channel)): 
+                    plt.subplot(8, 16, i + 1)
     
-            for i in np.arange(len(chs)):
-
-                plt.subplot(height, width, i + 1)
-
-                for tidx, trial in enumerate(trial_list):
-                    sub_trial = trial[chs[i] - 1, :tmax]
+                    for tidx, trial in enumerate(trial_list):
+                        sub_trial = trial[channel[i],:20000]
+                        plt.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
+                        # ymin, ymax = np.min(sub_trial), np.max(sub_trial)
+                        plt.axvline(x= 10025, ymin=0.05, ymax=0.95, color = 'darksalmon')
+                        plt.xlim(9000, 11800)
+                        #     plt.plot([.3*fs, .3*fs], [ymin, ymax], 'darksalmon')
+                        plt.title('Ch. ' + str(channel[i]), fontsize= 9)
+                        plt.xticks([9000, 10000, 11000],[-100, 0, 100])
+                        plt.xticks(fontsize=10)
+                        plt.yticks(fontsize=10)
+                        plt.xlabel('time (ms)', fontsize= 8)
+                        plt.ylabel('mV', fontsize= 8)
+                    
+                    
+                    plt.suptitle('{} Average Trial Across Channels'.format(self.animal_block), fontsize=20, y=1)
+            
+            if mean:
+                trial_mat = np.zeros((20000, len(trial_list)))
+        
+                for i in np.arange(len(channel)):
+    
+                    plt.subplot(8, 16, i + 1)
+    
+                    for tidx, trial in enumerate(trial_list):
+                        sub_trial = trial[channel[i], :20000]
+                        trial_mat[:, tidx] = sub_trial 
+    
+                    mean_trial = np.mean(trial_mat, axis=1)
+                    plt.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
+                    plt.xlim(9000, 11800)
+                    
+        else:
+            channel_matrix = trial_list[channel].T
+            
+            fig, ax = plt.subplots()
+            fig.tight_layout()
+            ax.set_xlim(9000, 11800)
+            ax.set_xticks([9000, 10000, 11000])
+            ax.set_xticklabels([-100, 0, 100])
+            
+            if trials:
+                for tidx, trial in enumerate(channel_matrix):
+                    sub_trial = trial[:]
+                    # ymin, ymax = np.min(sub_trial), np.max(sub_trial)
+                    ax.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
+                    ax.axvline(x= 10025, ymin=0.05, ymax=0.95, color = 'darksalmon')
+                
+                ax.set_title("Channel {} Trials".format(channel))
+                ax.set_xlabel("Time (ms)")
+                ax.set_ylabel("μV")
+            
+            if mean:
+                trial_mat = np.zeros((20000, len(channel_matrix)))
+                
+                for tidx, trial in enumerate(channel_matrix):
+                    sub_trial = trial[:]
                     trial_mat[:, tidx] = sub_trial 
-
+                    
                 mean_trial = np.mean(trial_mat, axis=1)
-                plt.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
-                plt.xlim(first, last)
+                ax.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
+                
+                ax.set_title("Channel {} Average Across Trials".format(channel))
+                ax.set_xlabel("Time (ms)")
+                ax.set_ylabel("μV")
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        # stim_delay = 0.25
+        # tdt_trials = tdt.epoc_filter(self.tdt_data, 'mark')
+        # trial_list = tdt_trials.streams[self.stream].filtered
+        # animal_block = self.tdt_data.info.blockname
+
+
+        # if self.stream == "Wave":
+        #     height = 8 
+        #     width = 16
+        #     tmax = 6000
+        #     first, last = 2000, 5000
+        #     chs = [
+        #             81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
+        #             82, 84, 86, 88, 90, 92, 94, 96, 99, 107, 100, 108, 116, 124, 115, 123,
+        #             66, 68, 70, 72, 74, 76, 78, 80, 101, 109, 102, 110, 118, 126, 117, 125,
+        #             65, 67, 69, 71, 73, 75, 77, 79, 103, 111, 104, 112, 120, 128, 119, 127,
+        #             63, 61, 59, 57, 55, 53, 51, 49, 25, 17, 26, 18, 10, 2, 9, 1,
+        #             64, 62, 60, 58, 56, 54, 52, 50, 27, 19, 28, 20, 12, 4, 11, 3,
+        #             48, 46, 44, 42, 40, 38, 36, 34, 29, 21, 30, 22, 14, 6, 13, 5,
+        #             47, 45, 43, 41, 39, 37, 35, 33, 31, 23, 32, 24, 16, 8, 15, 7
+        #             ]
+        # if self.stream == "Poly":
+        #     height = 32 
+        #     width = 2
+        #     tmax = 12000
+        #     first, last = 5500, 7000
+        #     chs = [ 
+        #             27, 37,
+        #             26, 38, 
+        #             25, 39, 
+        #             24, 40, 
+        #             23, 41,
+        #             22, 42, 
+        #             21, 43, 
+        #             20, 44, 
+        #             19, 45, 
+        #             18, 46,
+        #             17, 47, 
+        #             16, 48, 
+        #             15, 49, 
+        #             14, 50, 
+        #             13, 51,
+        #             12, 52, 
+        #             11, 53, 
+        #             10, 54, 
+        #             9, 55, 
+        #             8, 56, 
+        #             7, 57, 
+        #             6, 58, 
+        #             5, 59, 
+        #             4, 60, 
+        #             3, 61, 
+        #             2, 62, 
+        #             1, 63, 
+        #             28, 64, 
+        #             29, 36, 
+        #             30, 35, 
+        #             31, 34, 
+        #             32, 33,
+        #             ]
+          
+        
         
         
         
