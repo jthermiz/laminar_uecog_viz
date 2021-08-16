@@ -37,8 +37,8 @@ class data_reader:
         self.stream = stream
         self.stimulus = stimulus
         
-        def open_yaml(self):
-            with open('stimulus_yamls/{}.yaml'.format(self.stimulus), 'r') as file:
+        def open_yaml(stimulus):
+            with open('stimulus_yamls/{}.yaml'.format(stimulus), 'r') as file:
                 stim_doc = yaml.full_load(file)
             return stim_doc
         
@@ -71,12 +71,13 @@ class data_reader:
             self.stim_markers = markers[markers["sb"] == "s"]
         
         else:
+            #self.data_directory = ‘r’ + data_directory
             tdt_data = tdt.read_block(self.data_directory)
             self.animal_block = tdt_data.info.blockname
             stream_data = tdt_data.streams[self.stream].data
             self.fs = tdt_data.streams[self.stream].fs
             self.signal_data = stream_data.T
-            self.stim_markers = self.tdt_data.epocs.mark
+            self.stim_markers = tdt_data.epocs.mark
     
         
         return self.signal_data, self.fs, self.stim_markers, self.animal_block
