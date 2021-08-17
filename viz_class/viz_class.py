@@ -59,10 +59,6 @@ class viz:
         self.stream = stream
         self.stimulus = stimulus
         if self.stream == "Wave" or "ECoG":
-            height = 8 
-            width = 16
-            tmax = 6000
-            first, last = 2000, 5000
             channel_order = [
                     81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
                     82, 84, 86, 88, 90, 92, 94, 96, 99, 107, 100, 108, 116, 124, 115, 123,
@@ -74,10 +70,6 @@ class viz:
                     47, 45, 43, 41, 39, 37, 35, 33, 31, 23, 32, 24, 16, 8, 15, 7
                     ]
         if self.stream == "Poly":
-            height = 32 
-            width = 2
-            tmax = 12000
-            first, last = 5500, 7000
             channel_order = [ 
                     27, 37,
                     26, 38, 
@@ -113,17 +105,13 @@ class viz:
                     32, 33,
                     ]
         self.channel_order = channel_order #maybe add if else loop for wave vs poly channels
+        # self.height = height
+        # self.width = width
+        # self.first, self.last = first, last
+        # self.figsize = figsize
         dr = data_reader(data_directory, stream, stimulus)
         self.signal_data, self.fs, self.stim_markers, self.animal_block = dr.get_data()
         self.marker_onsets = dr.get_stim_onsets()
-        # self.tdt_data = tdt.read_block(data_directory)
-        # self.fs = self.tdt_data['streams'][stream]['fs']
-        # self.fs_stim_delay = .25 * self.fs
-        # self.markers = self.tdt_data.epocs.mark.onset
-        # self.marker_onsets = [int(x*self.fs+self.fs_stim_delay) for x in self.markers] 
-        
-        # wave_data_scrambled = self.tdt_data.streams.Wave.data
-        # correct_shape_wave_data = wave_data_scrambled.T
         
         def channel_orderer(signal_data):
             """Puts the wave data into the order of the channels
@@ -403,7 +391,7 @@ class viz:
         
       
         
-    def plot_trials(self, channel, trials = True, mean = True): 
+    def plot_trials(self, channel, trials = True, zscore = False): 
         '''Plot data trials and mean of trials per channel.
   
                 Parameters
@@ -415,76 +403,76 @@ class viz:
                 fs : TYPE
                     DESCRIPTION.
                 trials : (plot, optional)
-                    Whether to plot all trials. Defaults to True.
-                mean : (plot, optional)
-                    Whether to plot mean of all trials. Defaults to False.
+                    Whether to plot all trials & mean of all trials. Defaults to True.
             '''
-        trial_list = self.trials_dict
+        trials_dict = self.trials_dict
+        
+        if self.stream == "Wave" or "ECoG":
+            height = 8 
+            width = 16
+            #tmax = 6000
+            first, last = 9000, 11800
+            figsize = (60, 30)
+        if self.stream == "Poly":
+            height = 32 
+            width = 2
+            #tmax = 12000
+            first, last = 12500, 13800
+            figsize = (10, 80)
         
         if isinstance(channel, list):
             
+            fig, axs = plt.subplots(height, width, figsize=figsize, sharex=True)
+            fig.tight_layout(rect=[0.035, 0.03, 0.95, 0.97])
+            fig.supxlabel('Time (ms)', fontsize = 45)
+            fig.supylabel('μV', fontsize = 45)
             if trials:
-                for i in np.arange(len(channel)): 
-                    plt.subplot(8, 16, i + 1)
-    
-                    for tidx, trial in enumerate(trial_list):
-                        sub_trial = trial[channel[i],:20000]
-                        plt.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
-                        # ymin, ymax = np.min(sub_trial), np.max(sub_trial)
-                        plt.axvline(x= 10025, ymin=0.05, ymax=0.95, color = 'darksalmon')
-                        plt.xlim(9000, 11800)
-                        #     plt.plot([.3*fs, .3*fs], [ymin, ymax], 'darksalmon')
-                        plt.title('Ch. ' + str(channel[i]), fontsize= 9)
-                        plt.xticks([9000, 10000, 11000],[-100, 0, 100])
-                        plt.xticks(fontsize=10)
-                        plt.yticks(fontsize=10)
-                        plt.xlabel('time (ms)', fontsize= 8)
-                        plt.ylabel('mV', fontsize= 8)
-                    
-                    
-                    plt.suptitle('{} Average Trial Across Channels'.format(self.animal_block), fontsize=20, y=1)
-            
-            if mean:
-                trial_mat = np.zeros((20000, len(trial_list)))
-        
-                for i in np.arange(len(channel)):
-    
-                    plt.subplot(8, 16, i + 1)
-    
-                    for tidx, trial in enumerate(trial_list):
-                        sub_trial = trial[channel[i], :20000]
+                fig.suptitle('{} Average Trial Across Channels'.format(self.animal_block), fontsize = 55, y = 1)
+            if zscore:
+                fig.suptitle('{} Zscore Response Across Channels'.format(self.animal_block), fontsize = 55, y = 1)
+            chs = self.channel_order
+            idx = 0 #starting point for index in grid 
+            if trials:
+                while idx < (height*width):
+                    row, col = idx // width, idx % width
+                    #ch = chs[idx]
+                    ax = axs[row, col]
+                    channel = chs[idx]
+                    trials_matrix = trials_dict[channel].T
+                    trial_mat = np.zeros((20000, len(trials_matrix)))
+                    ax.set_xlim(first, last)
+                    ax.set_xticks([first, first + 1000, last - 800])
+                    ax.set_xticklabels([-100, 0, 100])
+                    for tidx, trial in enumerate(trials_matrix):
+                        sub_trial = trial[:]
                         trial_mat[:, tidx] = sub_trial 
-    
+                        ax.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
+                        ax.axvline(x= first + 1025, ymin=0.05, ymax=0.95, color = 'darksalmon')
                     mean_trial = np.mean(trial_mat, axis=1)
-                    plt.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
-                    plt.xlim(9000, 11800)
+                    ax.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
+                        
+                    ax.set_title("Channel {}".format(chs[idx]))
+                    idx += 1
+                
                     
         else:
-            channel_matrix = trial_list[channel].T
+            channel_matrix = trials_dict[channel].T
             
             fig, ax = plt.subplots()
             fig.tight_layout()
-            ax.set_xlim(9000, 11800)
-            ax.set_xticks([9000, 10000, 11000])
+            ax.set_xlim(first, last)
+            ax.set_xticks([first, first + 1000, last - 800])
             ax.set_xticklabels([-100, 0, 100])
             
-            if trials:
-                for tidx, trial in enumerate(channel_matrix):
-                    sub_trial = trial[:]
-                    # ymin, ymax = np.min(sub_trial), np.max(sub_trial)
-                    ax.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
-                    ax.axvline(x= 10025, ymin=0.05, ymax=0.95, color = 'darksalmon')
-                
-                ax.set_title("Channel {} Trials".format(channel))
-                ax.set_xlabel("Time (ms)")
-                ax.set_ylabel("μV")
             
-            if mean:
+            if trials:
                 trial_mat = np.zeros((20000, len(channel_matrix)))
                 
                 for tidx, trial in enumerate(channel_matrix):
                     sub_trial = trial[:]
-                    trial_mat[:, tidx] = sub_trial 
+                    trial_mat[:, tidx] = sub_trial
+                    ax.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
+                    ax.axvline(first + 1025, ymin=0.05, ymax=0.95, color = 'darksalmon')
                     
                 mean_trial = np.mean(trial_mat, axis=1)
                 ax.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
@@ -492,6 +480,20 @@ class viz:
                 ax.set_title("Channel {} Average Across Trials".format(channel))
                 ax.set_xlabel("Time (ms)")
                 ax.set_ylabel("μV")
+            
+            # if mean:
+            #     trial_mat = np.zeros((20000, len(channel_matrix)))
+                
+            #     for tidx, trial in enumerate(channel_matrix):
+            #         sub_trial = trial[:]
+            #         trial_mat[:, tidx] = sub_trial 
+                    
+            #     mean_trial = np.mean(trial_mat, axis=1)
+            #     ax.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
+                
+            #     ax.set_title("Channel {} Average Across Trials".format(channel))
+            #     ax.set_xlabel("Time (ms)")
+            #     ax.set_ylabel("μV")
         
         
         

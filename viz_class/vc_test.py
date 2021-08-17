@@ -26,182 +26,110 @@ chs_ordered = [
 
 test = vc.viz(RVG06_B03, stream, stimulus)
 
-plot_trials = test.plot_trials(chs_ordered)
-
-test.channel_order
+channels = test.channel_order
 test.animal_block
-trials = test.get_all_trials_matrices()
-trials[1][:]
 
-for trial in trials.values():
-    print(trial)
+test.plot_trials(channels)
 
-for i in np.arange(len(test.channel_order)): 
-    plt.subplot(8, 16, i + 1)
-    plt.rcParams['figure.dpi'] = 100.0
-    for trial in trials.values():
-        sub_trial = trial[test.channel_order[i],:]
-        plt.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
-        ymin, ymax = np.min(sub_trial), np.max(sub_trial)
-        # plt.plot([stim_delay*self.fs, stim_delay*self.fs], [ymin, ymax], 'darksalmon')
-        # plt.xlim(first, last)
-        # #     plt.plot([.3*fs, .3*fs], [ymin, ymax], 'darksalmon')
-        plt.title('Ch. ' + str(test.channel_order[i]), fontsize= 4.5)
-        # plt.xticks([first, first + 1000, last - 1000, last],[-100, 0, 100, 200])
-        plt.xticks(fontsize=5)
-        plt.yticks(fontsize=5)
-        # plt.xlabel('time (ms)', fontsize= 4)
-        # plt.ylabel('mV', fontsize= 4)
-        
-    plt.suptitle('{} Average Trial Across Channels'.format(test.animal_block), fontsize=13, y=1)
-    
-
-f = plt.figure()
-f.set_size_inches(100, 45)
-f.supxlabel('time (ms)', fontsize= 4)
-f.supylabel('mV', fontsize= 4)
-plt.tight_layout()
+plot_trials = test.plot_trials(channels)
 
 
-
-
-
-fig, axs = plt.subplots(8, 16, figsize=(10, 5), constrained_layout=True, sharex=True, sharey=True)
-
-
-for nn, ax in enumerate(axs.flat):
-    ax.set_xlim(9000, 11800)
-    for i in np.arange(len(test.channel_order)):
-        for trial in trials.values():
-            sub_trial = trial[test.channel_order[i],:]
-            ax.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
-            ymin, ymax = np.min(sub_trial), np.max(sub_trial)
-        #     ax.set_title(column, fontsize='small', loc='left')
-        #     ax.set_ylim([0, 100])
-        #     ax.grid()
-        # fig.supxlabel('Year')
-        # fig.supylabel('Percent Degrees Awarded To Women')
-plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-fig, axs = plt.subplots(8, 16, figsize=(20, 10))
-fig.tight_layout()
-chs = test.channel_order
-trials_dict = trials
-idx = 0 #starting point for index in grid 
-while idx < (8*16):
-    row, col = idx // 16, idx % 16
-    #ch = chs[idx]
-    ax = axs[row, col]
-    channel = chs[idx]
-    trials_mat = trials_dict[channel]
-    for tidx, trial in enumerate(trials_mat):
-        sub_trial = trial[:]
-        ymin, ymax = np.min(sub_trial), np.max(sub_trial)
-        ax.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
-    ax.set_title("Channel {}".format(chs[idx]))
-    ax.set_xlabel("Time (ms)")
-#       ax.set_ylabel("Frequency (Hz)")
-    idx += 1
-# fig.suptitle('Neural Spectrogram: {}'.format(animal_block), fontsize = 20, y = 1)
-fig
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-one_channel = test.get_trials_matrix(111)
+plot_trials = test.plot_trials(109)
 
 trials = test.get_all_trials_matrices()
-channel = trials[111]
-
-all_trials = test.get_all_trials_matrices()
-channel = all_trials[111].T
-
-fig, ax = plt.subplots()
-fig.tight_layout()
-ax.set_xlim(9000, 11800)
-ax.set_xticks([9000, 10000, 11000])
-ax.set_xticklabels([-100, 0, 100])
-
-for tidx, trial in enumerate(channel):
-    sub_trial = trial[:]
-    ymin, ymax = np.min(sub_trial), np.max(sub_trial)
-    ax.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
-    ax.axvline(x= 10025, ymin=0.05, ymax=0.95, color = 'darksalmon')
 
 
-trial_mat = np.zeros((20000, len(channel)))
 
-for tidx, trial in enumerate(channel):
-    sub_trial = trial[:]
-    trial_mat[:, tidx] = sub_trial 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# fig, axs = plt.subplots(8, 16, figsize=(60, 30), sharex=True)
+# fig.tight_layout(rect=[0.035, 0.03, 0.95, 0.97])
+# fig.supxlabel('Time (ms)', fontsize = 45)
+# fig.supylabel('μV', fontsize = 45)
+# fig.suptitle('{} Average Trial Across Channels'.format(test.animal_block), fontsize = 55, y = 1)
+# chs = test.channel_order
+# # trials_dict = trials
+# idx = 0 #starting point for index in grid 
+# while idx < (8*16):
+#     row, col = idx // 16, idx % 16
+#     #ch = chs[idx]
+#     ax = axs[row, col]
+#     channel = chs[idx]
+#     trials_mat = trials[channel].T
+#     trial_mat = np.zeros((20000, len(trials_mat)))
+#     ax.set_xlim(9000, 11800)
+#     ax.set_xticks([9000, 10000, 11000])
+#     ax.set_xticklabels([-100, 0, 100])
+#     for tidx, trial in enumerate(trials_mat):
+#         sub_trial = trial[:]
+#         trial_mat[:, tidx] = sub_trial 
+#         ymin, ymax = np.min(sub_trial), np.max(sub_trial)
+#         ax.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
+#     mean_trial = np.mean(trial_mat, axis=1)
+#     ax.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
+
+#     ax.set_title("Channel {}".format(chs[idx]))
+#     # ax.set_xlabel("Time (ms)")
+# #       ax.set_ylabel("Frequency (Hz)")
+#     idx += 1
+# # fig.supxlabel('Time (ms)', fontsize = 30)
+# # fig.supylabel('μV', fontsize = 30)
+# fig
+
+
+
+
+# one_channel = test.get_trials_matrix(111)
+
+# trials = test.get_all_trials_matrices()
+# channel = trials[chs_ordered[5]]
+
+# all_trials = test.get_all_trials_matrices()
+# channel = all_trials[111].T
+
+# fig, ax = plt.subplots()
+# fig.tight_layout()
+# ax.set_xlim(9000, 11800)
+# ax.set_xticks([9000, 10000, 11000])
+# ax.set_xticklabels([-100, 0, 100])
+
+
+# for tidx, trial in enumerate(channel):
+#     sub_trial = trial[:]
+#     ymin, ymax = np.min(sub_trial), np.max(sub_trial)
+#     ax.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
+#     ax.axvline(x= 10025, ymin=0.05, ymax=0.95, color = 'darksalmon')
+
+
+# trial_mat = np.zeros((20000, len(channel)))
+
+# for tidx, trial in enumerate(channel):
+#     sub_trial = trial[:]
+#     trial_mat[:, tidx] = sub_trial 
     
-mean_trial = np.mean(trial_mat, axis=1)
-ax.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
+# mean_trial = np.mean(trial_mat, axis=1)
+# ax.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
 
-ax.set_title("Channel {} Average Waveform Across Trials".format(channel))
-ax.set_xlabel("Time (ms)")
-ax.set_ylabel("μV")
-
-
-
-
-test.fs
-
-
-
-
-
-for i in np.arange(len(chs_ordered)): 
-    plt.subplot(height, width, i + 1)
-
-    for tidx, trial in enumerate(trial_list):
-        sub_trial = trial[chs[i] - 1,:tmax]
-        plt.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
-        ymin, ymax = np.min(sub_trial), np.max(sub_trial)
-        plt.plot([stim_delay*self.fs, stim_delay*self.fs], [ymin, ymax], 'darksalmon')
-        plt.xlim(first, last)
-        #     plt.plot([.3*fs, .3*fs], [ymin, ymax], 'darksalmon')
-        plt.title('Ch. ' + str(chs[i]), fontsize= 9)
-        plt.xticks([first, first + 1000, last - 1000, last],[-100, 0, 100, 200])
-        plt.xticks(fontsize=10)
-        plt.yticks(fontsize=10)
-        plt.xlabel('time (ms)', fontsize= 8)
-        plt.ylabel('mV', fontsize= 8)
-                
-    plt.suptitle('{} Average Trial Across Channels'.format(animal_block), fontsize=20, y=1)
-
-
-
-
-
-
-
-
-
-
-
+# ax.set_title("Channel {} Average Waveform Across Trials".format(channel))
+# ax.set_xlabel("Time (ms)")
+# ax.set_ylabel("μV")
 
 
 
