@@ -9,9 +9,10 @@ Created on Wed Jun 30 17:34:23 2021
 import viz_class as vc
 import numpy as np
 import matplotlib.pyplot as plt
+import get_zscore
 
-RVG06_B03 = r'/Users/vanessagutierrez/data/Rat/RVG06/RVG06_B03'
-stream = 'Wave'
+data_directory = r'/Users/vanessagutierrez/data/Rat/RVG14/RVG14_B03'
+stream = 'Poly'
 stimulus = 'wn2'
 chs_ordered = [
         81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
@@ -23,42 +24,45 @@ chs_ordered = [
         48, 46, 44, 42, 40, 38, 36, 34, 29, 21, 30, 22, 14, 6, 13, 5,
         47, 45, 43, 41, 39, 37, 35, 33, 31, 23, 32, 24, 16, 8, 15, 7
         ]
+cup_channels = [10, 15, 30, 45]
 
-test = vc.viz(RVG06_B03, stream, stimulus)
+test = vc.viz(data_directory, stream, stimulus)
 
 channels = test.channel_order
+channels
 test.animal_block
+fs = test.fs
+fs
 
-test.plot_trials(channels)
+onset_start = int(.05*fs)
+onset_stop = int(.15*fs)
 
-plot_trials = test.plot_trials(channels)
+# test.plot_trials(channels)
+# test.plot_trials()
+
+plot_trials = test.plot_trials(channels, trials = False, zscore = True)
 
 
-plot_trials = test.plot_trials(109)
+plot_trials = test.plot_trials(19, trials = True, zscore = False)
+
+plot_zscore = test.plot_zscore(21)
+
+plot_some_zscore = test.plot_zscore_matrix(2,2, selected_chs=cup_channels)
+
+plot_matrix_zscore = test.plot_zscore_matrix(2,2)
 
 trials = test.get_all_trials_matrices()
 
+one_channel = trials[39]
 
+test.plot_spectrogram_matrix(2,2)
 
+test.plot_all_hg_response(33)
 
+test.plot_high_gamma_matrix(3,2)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+hg = test.compute_high_gamma(one_channel, test.fs)
+# 
 # fig, axs = plt.subplots(8, 16, figsize=(60, 30), sharex=True)
 # fig.tight_layout(rect=[0.035, 0.03, 0.95, 0.97])
 # fig.supxlabel('Time (ms)', fontsize = 45)
@@ -96,40 +100,41 @@ trials = test.get_all_trials_matrices()
 
 
 
-# one_channel = test.get_trials_matrix(111)
+one_channel = test.get_trials_matrix(111)
 
-# trials = test.get_all_trials_matrices()
-# channel = trials[chs_ordered[5]]
+trials = test.get_all_trials_matrices()
+channel = trials[chs_ordered[5]]
 
-# all_trials = test.get_all_trials_matrices()
-# channel = all_trials[111].T
+all_trials = test.get_all_trials_matrices()
+channel = all_trials[14].T
 
-# fig, ax = plt.subplots()
-# fig.tight_layout()
-# ax.set_xlim(9000, 11800)
-# ax.set_xticks([9000, 10000, 11000])
-# ax.set_xticklabels([-100, 0, 100])
+fig, ax = plt.subplots()
+fig.tight_layout()
+
+x_axis = np.linspace(-10000, 10000, 20000)
+x_axis = (x_axis/test.fs) * 1000
+
+ax.set_xlim(-150, 150)
+
+for tidx, trial in enumerate(channel):
+    sub_trial = trial[:]
+    ymin, ymax = np.min(sub_trial), np.max(sub_trial)
+    ax.plot(x_axis, sub_trial, color=(.85,.85,.85), linewidth=0.5)
+    ax.axvline(x= 0, ymin=0.05, ymax=0.95, color = 'darksalmon')
 
 
-# for tidx, trial in enumerate(channel):
-#     sub_trial = trial[:]
-#     ymin, ymax = np.min(sub_trial), np.max(sub_trial)
-#     ax.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
-#     ax.axvline(x= 10025, ymin=0.05, ymax=0.95, color = 'darksalmon')
+trial_mat = np.zeros((20000, len(channel)))
 
-
-# trial_mat = np.zeros((20000, len(channel)))
-
-# for tidx, trial in enumerate(channel):
-#     sub_trial = trial[:]
-#     trial_mat[:, tidx] = sub_trial 
+for tidx, trial in enumerate(channel):
+    sub_trial = trial[:]
+    trial_mat[:, tidx] = sub_trial 
     
-# mean_trial = np.mean(trial_mat, axis=1)
-# ax.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
+mean_trial = np.mean(trial_mat, axis=1)
+ax.plot(x_axis, mean_trial, color='k', linewidth=2.5, zorder=10)
 
-# ax.set_title("Channel {} Average Waveform Across Trials".format(channel))
-# ax.set_xlabel("Time (ms)")
-# ax.set_ylabel("μV")
+ax.set_title("Channel {} Average Waveform Across Trials".format(channel))
+ax.set_xlabel("Time (ms)")
+ax.set_ylabel("μV")
 
 
 
@@ -139,7 +144,7 @@ trials = test.get_all_trials_matrices()
 
 test.plot_trials()
 test.plot_spectrogram_matrix(8,16)
-test.plot_high_gamma_matrix(8,16)
+test.plot_high_gamma_matrix(1,2)
 
 RVG08_B01 = r'/Users/macproizzy/Desktop/RVG_Data/RVG08_B01'
 RVG08 = vc.viz(RVG08_B01, chs_ordered, stream)
