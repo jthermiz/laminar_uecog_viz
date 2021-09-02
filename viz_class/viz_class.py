@@ -19,6 +19,7 @@ import warnings
 import seaborn as sns
 from process_nwb.wavelet_transform import wavelet_transform
 from data_reader import data_reader
+import get_zscore 
 warnings.simplefilter("ignore")
 
 
@@ -58,6 +59,12 @@ class viz:
         self.data_directory = data_directory
         self.stream = stream
         self.stimulus = stimulus
+        
+        # def open_yaml_file(stimulus):
+        #     with open('{stimulus_yamls}/{}.yaml'.format(stimulus), 'r') as file:
+        #         stim_doc = yaml.full_load(file)
+        #     return stim_doc
+        
         if self.stream == "Wave" or "ECoG":
             channel_order = [
                     81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
@@ -71,39 +78,74 @@ class viz:
                     ]
         if self.stream == "Poly":
             channel_order = [ 
-                    27, 37,
-                    26, 38, 
-                    25, 39, 
-                    24, 40, 
-                    23, 41,
-                    22, 42, 
-                    21, 43, 
-                    20, 44, 
-                    19, 45, 
-                    18, 46,
-                    17, 47, 
-                    16, 48, 
-                    15, 49, 
-                    14, 50, 
-                    13, 51,
-                    12, 52, 
-                    11, 53, 
-                    10, 54, 
-                    9, 55, 
-                    8, 56, 
-                    7, 57, 
-                    6, 58, 
-                    5, 59, 
-                    4, 60, 
-                    3, 61, 
-                    2, 62, 
-                    1, 63, 
-                    28, 64, 
-                    29, 36, 
-                    30, 35, 
-                    31, 34, 
-                    32, 33,
+                    21, 3, 
+                    23, 5, 
+                    24, 7, 
+                    30, 9, 
+                    29, 11, 
+                    16, 13, 
+                    18, 15, 
+                    20, 31, 
+                    27, 14, 
+                    19, 12, 
+                    17, 10, 
+                    25, 8, 
+                    26, 6, 
+                    32, 4, 
+                    28, 2, 
+                    22, 64, 
+                    1, 62, 
+                    58, 60, 
+                    54, 56, 
+                    50, 52,
+                    51, 34, 
+                    55, 53, 
+                    59, 57, 
+                    63, 61, 
+                    42, 44, 
+                    35, 41, 
+                    49, 36, 
+                    45, 47, 
+                    46, 38, 
+                    40, 48, 
+                    33, 39, 
+                    43, 37,
                     ]
+            
+            # channel_order = [ 
+            #         27, 37,
+            #         26, 38, 
+            #         25, 39, 
+            #         24, 40, 
+            #         23, 41,
+            #         22, 42, 
+            #         21, 43, 
+            #         20, 44, 
+            #         19, 45, 
+            #         18, 46,
+            #         17, 47, 
+            #         16, 48, 
+            #         15, 49, 
+            #         14, 50, 
+            #         13, 51,
+            #         12, 52, 
+            #         11, 53, 
+            #         10, 54, 
+            #         9, 55, 
+            #         8, 56, 
+            #         7, 57, 
+            #         6, 58, 
+            #         5, 59, 
+            #         4, 60, 
+            #         3, 61, 
+            #         2, 62, 
+            #         1, 63, 
+            #         28, 64, 
+            #         29, 36, 
+            #         30, 35, 
+            #         31, 34, 
+            #         32, 33,
+            #         ]
         self.channel_order = channel_order #maybe add if else loop for wave vs poly channels
         # self.height = height
         # self.width = width
@@ -112,6 +154,12 @@ class viz:
         dr = data_reader(data_directory, stream, stimulus)
         self.signal_data, self.fs, self.stim_markers, self.animal_block = dr.get_data()
         self.marker_onsets = dr.get_stim_onsets()
+        
+        self.savepic = '{}/Figures'.format(self.data_directory)
+        if not os.path.exists(self.savepic):
+            os.mkdir(self.savepic)
+        if os.path.exists(self.savepic):
+            print("Figure folder exists")
         
         def channel_orderer(signal_data):
             """Puts the wave data into the order of the channels
@@ -229,13 +277,14 @@ class viz:
         Plot of high gamma response over time.
 
         """
+        # trials_dict = viz.get_all_trials_matrices(self)
         if not hasattr(self,'trials_dict'):
             raise AttributeError('Please run object.get_all_trial_matrices to build the trials matrix dictionary')
         trial_matrix = self.trials_dict[channel]
         high_gamma_data = viz.compute_high_gamma(trial_matrix, self.fs)
         num_trials = high_gamma_data.shape[1]
         x_axis = np.linspace(-10000, 10000, 20000)
-        x_axis = (x_axis/self.fs) * 1000
+        # x_axis = (x_axis/self.fs) * 1000
     
         if fig == None and ax == None:
             fig, ax = plt.subplots()
@@ -246,21 +295,21 @@ class viz:
         median = np.median(high_gamma_data, axis = -1)
         ax.set_ylim(-5, max(median) + 15)
         ax.set_xlim(-200, 200)
-        ax.plot(x_axis, median, color = 'k', zorder = 10)
+        ax.plot(x_axis, median, color = 'k', linewidth= 2, zorder = 10)
         if single_trials:
             for i in np.arange(num_trials):
                 ax.plot(x_axis, high_gamma_data[:, i], color = 'k', alpha = .05)
                 ax.set_title("Channel {} High Gamma Response Single Trials".format(channel))
                 ax.set_xlabel("Time (ms)")
-                ax.set_ylabel("Zscored High Gamma Response Coefficient")
+                ax.set_ylabel("Zscored High Gamma Response")
         else:
             standard_dev = np.std(high_gamma_data, axis = -1)
             sqrt_n = np.sqrt(num_trials)
             standard_error = standard_dev/sqrt_n
-            ax.fill_between(x_axis, median - standard_error, median + standard_error, color = 'k', alpha = .1)
+            ax.fill_between(x_axis, median - standard_error, median + standard_error, color = 'k', alpha = .15)
             ax.set_title("Channel {} Median High Gamma Response".format(channel))
             ax.set_xlabel("Time (ms)")
-            ax.set_ylabel("Zscored High Gamma Response Coefficient")
+            ax.set_ylabel("Zscored High Gamma Response")
         fig
     
         
@@ -278,8 +327,8 @@ class viz:
             raise AttributeError('Please run object.get_all_trial_matrices to build the trials matrix dictionary')
         chs = self.channel_order
     
-        fig, axs = plt.subplots(nrow, ncol, figsize=(80, 40))
-        fig.tight_layout()
+        fig, axs = plt.subplots(nrow, ncol, figsize=(20, 15))
+        fig.tight_layout(rect = (0.01, 0, 1, 0.97))
         idx = 0 #starting point for index in grid 
         while idx < (nrow*ncol):
             row, col = idx // ncol, idx % ncol
@@ -287,10 +336,11 @@ class viz:
             self.plot_all_hg_response(chs[idx], fig = fig, ax = ax)
             ax.set_title("Channel {}".format(chs[idx]))
             ax.set_xlabel("Time (ms)")
-            ax.set_ylabel("High Gamma Response Coefficient")
+            #ax.set_ylabel("High Gamma Response Z-Scored")
             idx += 1
-        animal_block = self.tdt_data.info.blockname
+        animal_block = self.animal_block
         fig.suptitle('High Gamma Response: {}'.format(animal_block), fontsize = 20, y = 1)
+        fig.supylabel('High Gamma Response Z-Scored', fontsize = 15)
         fig
     
         
@@ -341,7 +391,7 @@ class viz:
             aspect = 1/5
         
         pos = ax.imshow(spec_data.T, interpolation='none', aspect=aspect, cmap='binary', 
-                    origin='lower', extent=[tmin, tmax, f[0], f[-1]])
+                    origin='lower', extent=[tmin, tmax, f[0], f[-1]], vmin=0)
         if log_scale:
             ax.set_yscale('symlog', basey=2)
         if zero_flag:
@@ -365,8 +415,15 @@ class viz:
             pre_buf (int): Number of samples to pull prior to stimulus onset
             post_buf (int): Number of samples to pull after stimulus onset
         """
-        fig, axs = plt.subplots(nrow, ncol, figsize=(20, 10))
-        fig.tight_layout()
+        if self.stream == "Wave" or "ECoG":
+            figsize = (60, 30)
+            layout = [0.035, 0.03, 0.95, 0.97]
+        if self.stream == "Poly":
+            figsize = (8, 80)
+            layout = [0.09, 0.015, 0.97, 0.992]
+        
+        fig, axs = plt.subplots(nrow, ncol, figsize=figsize)
+        fig.tight_layout(rect = layout)
         chs = self.channel_order
         trials_dict = self.trials_dict
         idx = 0 #starting point for index in grid 
@@ -383,13 +440,116 @@ class viz:
             ax.set_xlabel("Time (ms)")
 #        ax.set_ylabel("Frequency (Hz)")
             idx += 1
-        animal_block = self.tdt_data.info.blockname
-        fig.suptitle('Neural Spectrogram: {}'.format(animal_block), fontsize = 20, y = 1)
+        animal_block = self.animal_block
+        fig.suptitle('Neural Spectrogram: {}'.format(animal_block), fontsize = 30, y = 1)
         fig
         
       
+    def plot_zscore(self, channel, fig = None, ax = None, labels = True):
+        trials_dict = viz.get_all_trials_matrices(self)
+            
+        if fig == None and ax == None:
+            fig, ax = plt.subplots()
+        else:
+            fig, ax = fig, ax    
+        fig.tight_layout(rect = (0.04, 0.04, 1, 0.95))
+            
+        x_axis = np.linspace(-10000, 10000, 20000)
+        x_axis = (x_axis/self.fs) * 1000
+
+        ax.set_xlim(-150, 150)
+            
+        onset_start = int(.05*self.fs)
+        onset_stop = int(.15*self.fs)
+                
+        data_for_channel_zscored = get_zscore.zscore_from_baseline(trials_dict, channel, onset_start, onset_stop)
+        average_for_channel = get_zscore.get_average_zscore(trials_dict, channel, onset_start, onset_stop)
         
-      
+        ax.set_ylim(min(average_for_channel)-1, max(average_for_channel)+2)    
+        
+        
+        zscored_data = data_for_channel_zscored.T
+            
+        trial_mat = np.zeros((20000, len(data_for_channel_zscored)))
+                
+        for tidx, trial in enumerate(data_for_channel_zscored):
+            sub_trial = trial[:]
+            trial_mat[:, tidx] = sub_trial
+            ax.plot(x_axis, sub_trial, color = 'grey', alpha = .05, linewidth=0.5)
+                
+        num_trials = zscored_data.shape[1]
+        median = np.median(zscored_data, axis = -1)
+                
+        standard_dev = np.std(zscored_data, axis = -1)
+        sqrt_n = np.sqrt(num_trials)
+        standard_error = standard_dev/sqrt_n
+        ax.fill_between(x_axis, median - standard_error, median + standard_error, color = 'k', alpha = .3)
+                    
+        ax.plot(x_axis, average_for_channel, color = 'k', linewidth= 2, zorder = 9)
+        ax.axvline(x= 0, ymin=min(data_for_channel_zscored.flatten()), ymax=max(data_for_channel_zscored.flatten()), color = 'darksalmon', zorder = 11)
+                
+        ax.set_title("Channel {} Average Zscored Trial".format(channel), fontsize = 15)
+        
+        if labels == True:
+            ax.set_xlabel("Time (ms)")
+            ax.set_ylabel("mV")
+        
+                
+        # fig.savefig("{}/{}_Zscore_Ch.{}_{}.png".format(self.savepic, self.animal_block, channel, self.stream), dpi=300)
+        
+    def plot_zscore_matrix(self, nrow, ncol, selected_chs = None):
+        
+        #trials_dict = viz.get_all_trials_matrices(self)
+        
+        if isinstance(selected_chs, list):
+            chs = selected_chs
+            figsize = (10, 9)
+            titlesize = 18
+            labelsize = 12
+        else: 
+            chs = self.channel_order
+            figsize = (40, 40)
+            titlesize = 50
+            labelsize = 30
+        
+        # if self.stream == "Wave" or "ECoG":
+        #     figsize = (60, 30)
+        #     layout = [0.035, 0.03, 0.95, 0.97]
+        #     titlesize = 55
+        #     labelsize = 45
+        # if self.stream == "Poly":
+        #     figsize = (8, 80)
+        #     layout = [0.09, 0.015, 0.97, 0.992]
+        #     titlesize = 30
+        #     labelsize = 20
+            
+            
+        fig, axs = plt.subplots(nrow, ncol, figsize=figsize)
+        fig.tight_layout()
+        idx = 0 #starting point for index in grid
+            
+        
+        # if self.stream == "Wave" or "ECoG":
+        #     fig.supxlabel('Time (ms)', fontsize = labelsize)
+        #     fig.suptitle('{} Zscore Response Across Channels'.format(self.animal_block), fontsize = titlesize, y = 1)
+        #     fig.supylabel('mV', fontsize = labelsize)
+        # if self.stream == "Poly":
+        #     fig.supylabel('mV', fontsize = labelsize)
+        #     fig.supxlabel('Time (ms)', fontsize = labelsize)
+        #     fig.suptitle('{} Zscore Response Across Channels'.format(self.animal_block), fontsize = titlesize, y = 1)
+       
+                
+        while idx < (nrow*ncol):
+            row, col = idx // ncol, idx % ncol
+            ax = axs[row, col]
+            self.plot_zscore(chs[idx], fig = fig, ax = ax, labels = False)
+            idx += 1
+        
+        animal_block = self.animal_block
+        fig.suptitle('Z-Scored Responses Across Channels: {}'.format(animal_block), fontsize = titlesize, y = 1)
+        fig.supylabel('mV', fontsize = labelsize)
+        fig.supxlabel('Time(ms)', fontsize = labelsize)
+         
         
     def plot_trials(self, channel, trials = True, zscore = False): 
         '''Plot data trials and mean of trials per channel.
@@ -405,7 +565,8 @@ class viz:
                 trials : (plot, optional)
                     Whether to plot all trials & mean of all trials. Defaults to True.
             '''
-        trials_dict = self.trials_dict
+        trials_dict = viz.get_all_trials_matrices(self)
+        #savepic = self.savepic
         
         if self.stream == "Wave" or "ECoG":
             height = 8 
@@ -413,23 +574,36 @@ class viz:
             #tmax = 6000
             first, last = 9000, 11800
             figsize = (60, 30)
+            layout = [0.035, 0.03, 0.95, 0.97]
+            stim = .825
         if self.stream == "Poly":
             height = 32 
             width = 2
             #tmax = 12000
-            first, last = 12500, 13800
-            figsize = (10, 80)
+            first, last = 9000, 11800
+            figsize = (8, 80)
+            layout = [0.09, 0.015, 0.97, 0.992]
+            stim = .4125
         
         if isinstance(channel, list):
             
-            fig, axs = plt.subplots(height, width, figsize=figsize, sharex=True)
-            fig.tight_layout(rect=[0.035, 0.03, 0.95, 0.97])
-            fig.supxlabel('Time (ms)', fontsize = 45)
-            fig.supylabel('μV', fontsize = 45)
-            if trials:
-                fig.suptitle('{} Average Trial Across Channels'.format(self.animal_block), fontsize = 55, y = 1)
-            if zscore:
-                fig.suptitle('{} Zscore Response Across Channels'.format(self.animal_block), fontsize = 55, y = 1)
+            fig, axs = plt.subplots(height, width, figsize=figsize)
+            fig.tight_layout(rect = layout)
+            if self.stream == "Wave" or "ECoG":
+                fig.supylabel('μV', fontsize = 45)
+                fig.supxlabel('Time (ms)', fontsize = 45)
+                if trials:
+                    fig.suptitle('{} Average Trial Across Channels'.format(self.animal_block), fontsize = 55, y = 1)
+                if zscore:
+                    fig.suptitle('{} Zscore Response Across Channels'.format(self.animal_block), fontsize = 55, y = 1)
+                    fig.supylabel('mV', fontsize = 45)
+            if self.stream == "Poly":
+                fig.supylabel('mV', fontsize = 20)
+                fig.supxlabel('Time (ms)', fontsize = 20)
+                if trials:
+                    fig.suptitle('{} Average Trial Across Channels'.format(self.animal_block), fontsize = 30, y = 1)
+                if zscore:
+                    fig.suptitle('{} Zscore Response Across Channels'.format(self.animal_block), fontsize = 30, y = 1)
             chs = self.channel_order
             idx = 0 #starting point for index in grid 
             if trials:
@@ -447,16 +621,47 @@ class viz:
                         sub_trial = trial[:]
                         trial_mat[:, tidx] = sub_trial 
                         ax.plot(sub_trial, color=(.85,.85,.85), linewidth=0.5)
-                        ax.axvline(x= first + 1025, ymin=0.05, ymax=0.95, color = 'darksalmon')
+                        ax.axvline(x= stim*self.fs, ymin=0.05, ymax=0.95, color = 'darksalmon')
                     mean_trial = np.mean(trial_mat, axis=1)
                     ax.plot(mean_trial, color='k', linewidth=2.5, zorder=10)
                         
                     ax.set_title("Channel {}".format(chs[idx]))
                     idx += 1
+                    
+                fig.savefig("{}/{}_Average_Trials_Across_Channels_{}.png".format(self.savepic, self.animal_block, self.stream), dpi=300)
+                    
+            if zscore:
+                onset_start = int(.05*self.fs)
+                onset_stop = int(.15*self.fs)
                 
+                while idx < (height*width):
+                    row, col = idx // width, idx % width
+                    #ch = chs[idx]
+                    ax = axs[row, col]
+                    channel = chs[idx]
+                    ax.set_xlim(first, last)
+                    ax.set_xticks([first, first + 1000, last - 800])
+                    ax.set_xticklabels([-100, 0, 100])
+                    
+                    data_for_channel_zscored = get_zscore.zscore_from_baseline(trials_dict, channel, onset_start, onset_stop)
+                    average_for_channel = get_zscore.get_average_zscore(trials_dict, channel, onset_start, onset_stop)
+                    std_for_channel = get_zscore.get_std(trials_dict, channel, onset_start, onset_stop)
+                        
+                    ax.plot(average_for_channel, color = 'k', linewidth= 2.5, zorder = 9)
+                    ax.plot(average_for_channel + std_for_channel, 'w', average_for_channel - std_for_channel, 'w', linewidth=.8, zorder=10)
+                    ax.fill_between(range(20000), average_for_channel - std_for_channel, average_for_channel + std_for_channel, color='gray', alpha = 0.5)
+                    ax.vlines(stim*self.fs, ymin = min(data_for_channel_zscored.flatten()), ymax = max(data_for_channel_zscored.flatten()), color = 'darksalmon', zorder = 11)
+                    # ax.axhline(y=0, color='darkgrey', linestyle='--', zorder = 1)
+                    ax.set_title("Channel {}".format(chs[idx]))
+                    idx += 1
+                
+                fig.savefig("{}/{}_ZScore_Across_Channels_{}.png".format(self.savepic, self.animal_block, self.stream), dpi=300)
+                    
+            
                     
         else:
             channel_matrix = trials_dict[channel].T
+            # print(channel_matrix.shape)
             
             fig, ax = plt.subplots()
             fig.tight_layout()
@@ -479,7 +684,45 @@ class viz:
                 
                 ax.set_title("Channel {} Average Across Trials".format(channel))
                 ax.set_xlabel("Time (ms)")
-                ax.set_ylabel("μV")
+                if self.stream == "Wave" or "ECoG":
+                    ax.set_ylabel("μV")
+                if self.stream == "Poly":
+                    ax.set_ylabel("mV")
+                    
+                fig.savefig("{}/{}_Average_Trial_Ch.{}_{}.png".format(self.savepic, self.animal_block, channel, self.stream), dpi=300)
+                    
+            if zscore:
+                onset_start = int(.05*self.fs)
+                onset_stop = int(.15*self.fs)
+                
+                data_for_channel_zscored = get_zscore.zscore_from_baseline(trials_dict, channel, onset_start, onset_stop)
+                average_for_channel = get_zscore.get_average_zscore(trials_dict, channel, onset_start, onset_stop)
+                std_for_channel = get_zscore.get_std(trials_dict, channel, onset_start, onset_stop)
+                
+                print("data for channel", data_for_channel_zscored.shape)
+                zscored_data = data_for_channel_zscored.T
+                num_trials = zscored_data.shape[1]
+                median = np.median(zscored_data, axis = -1)
+                
+                standard_dev = np.std(zscored_data, axis = -1)
+                sqrt_n = np.sqrt(num_trials)
+                standard_error = standard_dev/sqrt_n
+                ax.fill_between(range(20000), median - standard_error, median + standard_error, color = 'k', alpha = .2)
+                    
+                ax.plot(average_for_channel, color = 'k', linewidth= 2.5, zorder = 9)
+                #ax.plot(average_for_channel + std_for_channel, 'w', average_for_channel - std_for_channel, 'w', linewidth=.8, zorder=10)
+                #ax.fill_between(range(20000), average_for_channel - std_for_channel, average_for_channel + std_for_channel, color='gray', alpha = 0.5)
+                # ax.axhline(y=0, color='darkgrey', linestyle='--', zorder = 1)
+                ax.vlines(stim*self.fs, ymin = min(data_for_channel_zscored.flatten()), ymax = max(data_for_channel_zscored.flatten()), color = 'darksalmon', zorder = 11)
+                #ax.vlines(.4425*self.fs, ymin = min(data_for_channel_zscored.flatten()), ymax = max(data_for_channel_zscored.flatten()), color = 'darksalmon', zorder = 11)
+                
+                ax.set_title("Channel {} Average Zscored Trial".format(channel))
+                ax.set_xlabel("Time (ms)")
+                ax.set_ylabel("mV")
+                
+                fig.savefig("{}/{}_Zscore_Ch.{}_{}.png".format(self.savepic, self.animal_block, channel, self.stream), dpi=300)
+                
+                
             
             # if mean:
             #     trial_mat = np.zeros((20000, len(channel_matrix)))
