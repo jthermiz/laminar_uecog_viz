@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import get_zscore
 
 data_directory = r'/Users/vanessagutierrez/data/Rat/RVG14/RVG14_B03'
-stream = 'Poly'
+stream = 'Wave'
 stimulus = 'wn2'
 chs_ordered = [
         81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
@@ -24,7 +24,7 @@ chs_ordered = [
         48, 46, 44, 42, 40, 38, 36, 34, 29, 21, 30, 22, 14, 6, 13, 5,
         47, 45, 43, 41, 39, 37, 35, 33, 31, 23, 32, 24, 16, 8, 15, 7
         ]
-cup_channels = [10, 15, 30, 45]
+cup_channels = [13, 6, 87, 109]
 
 test = vc.viz(data_directory, stream, stimulus)
 
@@ -43,13 +43,13 @@ onset_stop = int(.15*fs)
 plot_trials = test.plot_trials(channels, trials = False, zscore = True)
 
 
-plot_trials = test.plot_trials(19, trials = True, zscore = False)
+plot_trials = test.plot_trials(64, trials = True, zscore = False)
 
-plot_zscore = test.plot_zscore(21)
+plot_zscore = test.plot_zscore(85)
 
 plot_some_zscore = test.plot_zscore_matrix(2,2, selected_chs=cup_channels)
 
-plot_matrix_zscore = test.plot_zscore_matrix(2,2)
+plot_matrix_zscore = test.plot_zscore_matrix(8,16)
 
 trials = test.get_all_trials_matrices()
 
@@ -57,11 +57,72 @@ one_channel = trials[39]
 
 test.plot_spectrogram_matrix(2,2)
 
-test.plot_all_hg_response(33)
+test.plot_all_hg_response(13)
 
-test.plot_high_gamma_matrix(3,2)
+test.plot_high_gamma_matrix(2,2)
 
 hg = test.compute_high_gamma(one_channel, test.fs)
+
+
+
+def plot_spectrogram(tf_data, f, tmin, tmax, yticks=[100, 200, 400, 800], colorbar=False,
+ax=None, fig=None, zero_flag=False, vrange=[0, None], max_flag=True):
+"""Plots spectrogram
+
+Args:
+tf_data (nparray): Trial matrix samples x trials
+f (nparray): Frequency vector
+tmin (np.float): X-axis min display time (whatever is specified is what the x-axis will be label irrespective if it is correct)
+tmax (np.float): X-axis max display time (whatever is specified is what the x-axis will be label irrespective if it is correct)
+colorbar (bool, optional): Whether to plot colorbar. Defaults to False.
+ax (class, optional): Matplotlib axes handle. Defaults to None.
+fig (class, optional): Matplotlib figure handle. Defaults to None.
+zero_flag (boolean, optional): Plots red line at t=0
+log_scale (boolean, optional): Plots y-scale in base 2
+"""
+#tf_data: samples x frequencies
+if (ax is None) or (fig is None):
+fig, ax = plt.subplots(1, 1)
+mat = tf_data.T
+print(mat.shape)
+pos = ax.imshow(mat, interpolation='none', aspect=2, vmin=vrange[0], vmax=vrange[1], cmap='binary',
+origin='lower', extent=[tmin, tmax, 0, len(f)])
+values = [10, 30, 75, 150, 300, 600, 1200]
+positions = [np.argmin(np.abs(v - f)) for v in values]
+plt.yticks(positions, values)
+#ax.set_yticklabels(values)
+print(positions)
+
+
+
+if zero_flag:
+ax.plot([0 ,0], [0, len(f)], 'r')
+if colorbar:
+fig.colorbar(pos, ax=ax)
+if max_flag:
+#textstr = r'$Z_{min}=%.2f$' % (np.max(tf_data))
+textstr = 'min={0:.2f}, max={1:.2f}'.format(np.min(tf_data), np.max(tf_data))
+ax.set_title(textstr, fontsize=8)
+
+for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+ax.get_xticklabels() + ax.get_yticklabels()):
+item.set_fontsize(8)
+
+return fig, ax
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # 
 # fig, axs = plt.subplots(8, 16, figsize=(60, 30), sharex=True)
 # fig.tight_layout(rect=[0.035, 0.03, 0.95, 0.97])

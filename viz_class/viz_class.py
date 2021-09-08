@@ -280,11 +280,14 @@ class viz:
         # trials_dict = viz.get_all_trials_matrices(self)
         if not hasattr(self,'trials_dict'):
             raise AttributeError('Please run object.get_all_trial_matrices to build the trials matrix dictionary')
-        trial_matrix = self.trials_dict[channel]
+        trials_dict = viz.get_all_trials_matrices(self)
+        trial_matrix = trials_dict[channel]
         high_gamma_data = viz.compute_high_gamma(trial_matrix, self.fs)
         num_trials = high_gamma_data.shape[1]
         x_axis = np.linspace(-10000, 10000, 20000)
-        # x_axis = (x_axis/self.fs) * 1000
+        #x_axis = np.linspace(-10000, 15500, 20000) #wave tone_diag
+        #x_axis = np.linspace(-10000, 5500, 20000)
+        x_axis = (x_axis/self.fs) * 1000
     
         if fig == None and ax == None:
             fig, ax = plt.subplots()
@@ -360,17 +363,20 @@ class viz:
         Xh, _, f, _  = wavelet_transform(trials_mat, rate=fs, filters='rat', hg_only=False)
         n = Xh.shape[0] // 2
         Xh = Xh[(n - pre_buf):(n + post_buf), :, :] #throw away edges bc of possible effect affects
-        Xh = Xh[:, :, 10:] #throw away low frequencies
-        f = f[10:]
+        Xh = Xh[:, :, :] #throw away low frequencies
+        f = f[:]
         Xm = abs(Xh) #take abs value
         Xnorm = viz.zscore_data(Xm, baseline) #zscore 
+        print('f[0]', f[0])
+        print('f[-1]', f[-1])
         return Xnorm, f
     
     
     
     
-    def plot_spectrogram(spec_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, zero_flag=False, log_scale=False):
+    def plot_spectrogram(tf_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, zero_flag=False, vrange=[0, None], max_flag=True):
         """Plots spectrogram
+        spec_data, f, tmin, tmax, colorbar=False, ax=None, fig=None, zero_flag=False, log_scale=False
             Args:
                 tf_data (nparray): Trial matrix samples x trials
                 f (nparray): Frequency vector
@@ -384,20 +390,56 @@ class viz:
             """
         if (ax is None) or (fig is None):
             fig, ax = plt.subplots(1, 1)
+            
+        mat = tf_data.T
+        print(mat.shape)
         
-        if log_scale:
-            aspect = 10
-        else:
-            aspect = 1/5
+        pos = ax.imshow(mat, interpolation='none', aspect=2, vmin=vrange[0], vmax=vrange[1], cmap='binary', origin='lower', extent=[tmin, tmax, 0, len(f)])
         
-        pos = ax.imshow(spec_data.T, interpolation='none', aspect=aspect, cmap='binary', 
-                    origin='lower', extent=[tmin, tmax, f[0], f[-1]], vmin=0)
-        if log_scale:
-            ax.set_yscale('symlog', basey=2)
+        values = [10, 30, 75, 150, 300, 600, 1200]
+        #values = [3, 7, 24, 75, 240, 760]
+        
+        positions = [np.argmin(np.abs(v - f)) for v in values]
+        
+        plt.yticks(positions, values)
+        #ax.set_yticklabels(values)
+        #print(positions)
+        
+        
         if zero_flag:
-            ax.plot([0 ,0], [f[0], f[-1]], 'r')
+            ax.plot([0 ,0], [0, len(f)], 'r')
         if colorbar:
-            fig.colorbar(pos, ax=ax, shrink=0.7, pad = 0.02)
+            fig.colorbar(pos, ax=ax)
+        if max_flag:
+        #textstr = r'$Z_{min}=%.2f$' % (np.max(tf_data))
+            textstr = 'min={0:.2f}, max={1:.2f}'.format(np.min(tf_data), np.max(tf_data))
+            ax.set_title(textstr, fontsize=8)
+        
+        for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize(15)
+        
+        return fig, ax 
+            
+         
+            
+         
+            
+        # if (ax is None) or (fig is None):
+        #     fig, ax = plt.subplots(1, 1)
+        
+        # if log_scale:
+        #     aspect = 10
+        # else:
+        #     aspect = 1/5
+        
+        # pos = ax.imshow(spec_data.T, interpolation='none', aspect=aspect, cmap='binary', 
+        #             origin='lower', extent=[tmin, tmax, f[0], f[-1]], vmin=0)
+        # if log_scale:
+        #     ax.set_yscale('symlog', basey=2)
+        # if zero_flag:
+        #     ax.plot([0 ,0], [f[0], f[-1]], 'r')
+        # if colorbar:
+        #     fig.colorbar(pos, ax=ax, shrink=0.7, pad = 0.02)
             
     
     
@@ -425,7 +467,7 @@ class viz:
         fig, axs = plt.subplots(nrow, ncol, figsize=figsize)
         fig.tight_layout(rect = layout)
         chs = self.channel_order
-        trials_dict = self.trials_dict
+        trials_dict = viz.get_all_trials_matrices(self)
         idx = 0 #starting point for index in grid 
         while idx < (nrow*ncol):
             row, col = idx // ncol, idx % ncol
@@ -435,7 +477,7 @@ class viz:
             trials_mat = trials_dict[channel]
             tf_data, f = viz.compute_spectrogram(trials_mat, self.fs)
             tf_data = np.median(tf_data, axis=1)
-            viz.plot_spectrogram(tf_data, f, -100, 100, ax=ax, fig=fig, colorbar=True,log_scale=False)
+            viz.plot_spectrogram(tf_data, f, -100, 100, ax=ax, fig=fig, colorbar=True,zero_flag=False)
             ax.set_title("Channel {}".format(chs[idx]))
             ax.set_xlabel("Time (ms)")
 #        ax.set_ylabel("Frequency (Hz)")
@@ -455,8 +497,11 @@ class viz:
         fig.tight_layout(rect = (0.04, 0.04, 1, 0.95))
             
         x_axis = np.linspace(-10000, 10000, 20000)
+        #x_axis = np.linspace(-10000, 7500, 20000) #wave tonediag
+        #x_axis = np.linspace(-10000, 5500, 20000)  #poly tonediag
         x_axis = (x_axis/self.fs) * 1000
 
+        #ax.set_xlim(-150, 150)
         ax.set_xlim(-150, 150)
             
         onset_start = int(.05*self.fs)
@@ -475,7 +520,7 @@ class viz:
         for tidx, trial in enumerate(data_for_channel_zscored):
             sub_trial = trial[:]
             trial_mat[:, tidx] = sub_trial
-            ax.plot(x_axis, sub_trial, color = 'grey', alpha = .05, linewidth=0.5)
+            ax.plot(x_axis, sub_trial, color = 'grey', alpha = .035, linewidth=0.5)
                 
         num_trials = zscored_data.shape[1]
         median = np.median(zscored_data, axis = -1)
