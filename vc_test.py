@@ -35,6 +35,8 @@ test.animal_block
 fs = test.fs
 fs
 
+num_base_pts=0
+
 onset_start = int(.05*fs)
 onset_stop = int(.15*fs)
 
@@ -46,7 +48,7 @@ plot_trials = test.plot_trials(channels, trials = False, zscore = True)
 
 plot_trials = test.plot_trials(64, trials = True, zscore = False)
 
-plot_zscore = test.plot_zscore(85)
+plot_zscore = test.plot_zscore(82)
 
 plot_some_zscore = test.plot_zscore_matrix(2,2, selected_chs=cup_channels)
 
@@ -56,16 +58,19 @@ trials = test.get_all_trials_matrices()
 
 one_channel = trials[39]
 
+ch_trials = test.get_trials_matrix(39)
+
 test.plot_spectrogram_matrix(2,2)
 
-test.plot_all_hg_response(13)
+test.plot_all_hg_response(82)
 
 test.plot_high_gamma_matrix(2,2)
 
 hg = test.compute_high_gamma(one_channel, test.fs)
 
+viz_z=test.zscore_data(ch_trials)
 
-get_average_zscore()
+old_z=get_average_zscore(trials, 39, onset_start, onset_stop)
 
 def plot_spectrogram(tf_data, f, tmin, tmax, yticks=[100, 200, 400, 800], colorbar=False,
 ax=None, fig=None, zero_flag=False, vrange=[0, None], max_flag=True):

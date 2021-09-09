@@ -199,7 +199,7 @@ class viz:
     
     
     
-    def zscore_data(trials_matrix, num_base_pts=200):
+    def zscore_data(trials_mat, num_base_pts=600):
         """Compute zscore across trial matrix
         Args:
             trials_matrix (nparray): Trial matrix of samples x trials
@@ -208,9 +208,9 @@ class viz:
                 tm_norm_data (nparray): Normalized trial matrix
         """
         # Zscore the data
-        mean = trials_matrix[:num_base_pts].mean(axis=0, keepdims=True)
-        std = trials_matrix[:num_base_pts].std(axis=0, keepdims=True)
-        tm_norm_data = (trials_matrix - mean) / std    
+        mean = trials_mat[:num_base_pts].mean(axis=0, keepdims=True)
+        std = trials_mat[:num_base_pts].std(axis=0, keepdims=True)
+        tm_norm_data = (trials_mat - mean) / std    
         return tm_norm_data
     
     
@@ -487,6 +487,7 @@ class viz:
       
     def plot_zscore(self, channel, fig = None, ax = None, labels = True):
         trials_dict = viz.get_all_trials_matrices(self)
+        trials_mat = trials_dict[channel]
             
         if fig == None and ax == None:
             fig, ax = plt.subplots()
@@ -499,37 +500,43 @@ class viz:
         #x_axis = np.linspace(-10000, 5500, 20000)  #poly tonediag
         x_axis = (x_axis/self.fs) * 1000
 
-        #ax.set_xlim(-150, 150)
         ax.set_xlim(-150, 150)
+        #ax.set_xlim(-150, 150)
+        
+        data_for_channel_zscored = viz.zscore_data(trials_mat)
+        average_for_channel = np.mean(data_for_channel_zscored, axis = 1)
             
-        onset_start = int(.05*self.fs)
-        onset_stop = int(.15*self.fs)
+        # onset_start = int(.05*self.fs)
+        # onset_stop = int(.15*self.fs)
                 
-        data_for_channel_zscored = get_zscore.zscore_from_baseline(trials_dict, channel, onset_start, onset_stop)
-        average_for_channel = get_zscore.get_average_zscore(trials_dict, channel, onset_start, onset_stop)
+        # data_for_channel_zscored = get_zscore.zscore_from_baseline(trials_dict, channel, onset_start, onset_stop)
+        # average_for_channel = get_zscore.get_average_zscore(trials_dict, channel, onset_start, onset_stop)
         
         ax.set_ylim(min(average_for_channel)-1, max(average_for_channel)+2)    
         
         
         zscored_data = data_for_channel_zscored.T
+        
+        print(zscored_data.shape)
+        print(len(zscored_data))
             
-        trial_mat = np.zeros((20000, len(data_for_channel_zscored)))
+        trial_mat = np.zeros((20000, len(zscored_data)))
                 
-        for tidx, trial in enumerate(data_for_channel_zscored):
+        for tidx, trial in enumerate(zscored_data):
             sub_trial = trial[:]
             trial_mat[:, tidx] = sub_trial
             ax.plot(x_axis, sub_trial, color = 'grey', alpha = .035, linewidth=0.5)
                 
-        num_trials = zscored_data.shape[1]
-        median = np.median(zscored_data, axis = -1)
+        num_trials = data_for_channel_zscored.shape[1]
+        mean = np.mean(data_for_channel_zscored, axis = -1)
                 
-        standard_dev = np.std(zscored_data, axis = -1)
+        standard_dev = np.std(data_for_channel_zscored, axis = -1)
         sqrt_n = np.sqrt(num_trials)
         standard_error = standard_dev/sqrt_n
-        ax.fill_between(x_axis, median - standard_error, median + standard_error, color = 'k', alpha = .3)
+        ax.fill_between(x_axis, mean - standard_error, mean + standard_error, color = 'k', alpha = .3)
                     
         ax.plot(x_axis, average_for_channel, color = 'k', linewidth= 2, zorder = 9)
-        ax.axvline(x= 0, ymin=min(data_for_channel_zscored.flatten()), ymax=max(data_for_channel_zscored.flatten()), color = 'darksalmon', zorder = 11)
+        ax.axvline(x= 0, ymin=min(zscored_data.flatten()), ymax=max(zscored_data.flatten()), color = 'darksalmon', zorder = 11)
                 
         ax.set_title("Channel {} Average Zscored Trial".format(channel), fontsize = 15)
         
