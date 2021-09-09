@@ -1,0 +1,13 @@
+name: wn2
+type: discrete
+mark_offset: 0.25
+mark_threshold: 0.3
+mark_sampling_rate: 12207.03125
+nsamples: 60
+duration: 0.1
+stim_values: np.ones(60)
+baseline_start: 0.3
+baseline_end: 0.5
+first_mark: 0.0
+luigi_cls: WhiteNoiseAnalysis
+tokenizer: wn_tokenize

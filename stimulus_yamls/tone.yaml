@@ -1,0 +1,16 @@
+name: tone
+
+type: discrete
+mark_offset: 0
+mark_threshold: 0.3
+mark_sampling_rate: 12207.03125
+duration: 0.05
+nsamples: 4800
+baseline_start: 0.1
+baseline_end: 0.18
+first_mark: 5.0
+
+# --- legacy contents, not being used in nsds_lab_to_nwb ---
+# stim_values: tone_stimulus_values(Tone.stimVls.mat)
+# luigi_cls: ToneAnalysis
+# tokenizer: tone_tokenize
