@@ -6,7 +6,7 @@ Created on Wed Sep  8 15:35:48 2021
 @author: vanessagutierrez
 """
 from process_nwb.wavelet_transform import wavelet_transform
-
+lkajflwjef
 def zscore_data(trials_mat, num_base_pts=200):
     """Compute zscore across trial matrix
     Args:
