@@ -20,17 +20,13 @@ class data_reader:
 
         Parameters
         ----------
-        data_directory : PATH
-            Data path.
-        stream : STR
-            Name of stream in data block (ex: 'Wave' or 'ECoG').
-        stimulus : STR
-            Name of stimulus in data block (ex: 'wn2' or 'tone_diagnostic').
+        data_directory (path): Data path.
+        stream (str): Name of stream in data block (ex: 'Wave' or 'ECoG').
+        stimulus (str): Name of stimulus in data block (ex: 'wn2' or 'tone_diagnostic').
 
         Returns
         -------
-        stim_doc : DICT
-            Dictionary of yaml file contaning relevant stimulus values
+        stim_doc (dict): Dictionary of yaml file contaning relevant stimulus values
 
         '''
         self.data_directory = data_directory
@@ -51,14 +47,10 @@ class data_reader:
 
         Returns
         -------
-        signal_data: (np.array)
-            array of samples by channels
-        fs: (np.float)
-            sample rate
-        stim_markers : (list)
-            list of stimulus markers
-        animal_block : (str)
-            name of animal block
+        signal_data (np.array): array of samples by channels
+        fs (np.float): sample rate
+        stim_markers (list): list of stimulus markers
+        animal_block (str): name of animal block
 
         '''
         if self.data_directory.endswith('.nwb'):
@@ -88,13 +80,14 @@ class data_reader:
         
         Returns
         -------
-        marker_onsets : LIST
-            DESCRIPTION.
-
+        marker_onsets (list): marker onset timepoints in samples.
+        stim_duration (int): duration of stimulus in seconds
+        
         '''
         mark_offset = self.stim_doc['mark_offset']
         fs_stim_delay = self.fs * mark_offset
         nsamples = self.stim_doc['nsamples']
+        stim_duration = self.stim_doc['duration']
         
         if self.data_directory.endswith('.nwb'):
             onsets = self.stim_markers.iloc[:, [0,2]]
@@ -109,24 +102,4 @@ class data_reader:
             print("WARNING: found {} stim onsets in block {}, but supposed to have {} samples".format(len(marker_onsets), self.animal_block, nsamples))
         
         
-        return marker_onsets
-
-
-
-
-
-# mark_data = nwbfile.stimulus['recorded_mark'].data
-#         mark_fs = nwbfile.stimulus['recorded_mark'].rate
-#         mark_offset = nsenwb.stim['mark_offset']
-#         stim_dur = nsenwb.stim['duration']
-#         stim_dur_samp = stim_dur*mark_fs
-    
-#         mark_threshold = 0.25 if nsenwb.stim.get('mark_is_stim') else nsenwb.stim['mark_threshold']
-#         thresh_crossings = np.diff( (mark_dset.data[:] > mark_threshold).astype('int'), axis=0 )
-#         stim_onsets = np.where(thresh_crossings > 0.5)[0] + 1 # +1 b/c diff gets rid of 1st datapoint
-    
-#         real_stim_onsets = [stim_onsets[0]]
-#         for stim_onset in stim_onsets[1:]:
-#             # Check that each stim onset is more than 2x the stimulus duration since the previous
-#             if stim_onset > real_stim_onsets[-1] + 2*stim_dur_samp:
-#                 real_stim_onsets.append(stim_onset)
+        return marker_onsets, stim_duration

@@ -17,7 +17,7 @@ import os
 import warnings 
 from process_nwb.wavelet_transform import wavelet_transform
 from viz import data_reader as dr
-import get_zscore 
+from viz import get_zscore 
 warnings.simplefilter("ignore")
 
 

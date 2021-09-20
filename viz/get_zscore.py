@@ -9,22 +9,22 @@ Created on Thu Aug 19 11:52:45 2021
 import numpy as np
 
 
-def stimulus_onset_one_channel(data_for_trial_list, channel, onset_start, onset_stop):
+def stimulus_onset_one_channel(trials_dict, channel, onset_start, onset_stop):
+    """
+    Parameters
+    ----------
+    trials_dict (dict): Trials dictionary that is the length of number of channels and each channel key has its trial matrix (samples, trials)
+    channel (int): Specific channel you want data for.
+    onset_start (int): starting period of the stimulus onset including some ms of baseline before.
+    onset_stop (int): ending period of the stimulus onset including some ms of baseline after.
+
+    Returns
+    -------
+    onset_for_channel (np.array): array with the data during the onset period for all trials.
+
+    """
     
-    """inputs: 
-        data for trial list(list)
-            list with data with an array for each trial that contains subarrays for each channel
-        channel(int)
-             channel you want data for 
-        onset_start (int)
-            starting period of the stimulus onset
-        onset_stop
-            right before stimulus occurs 
-            
-        returns: 
-            array with the data during the onset period for all trials"""
-    
-    all_data_for_channel = data_for_trial_list[channel].T
+    all_data_for_channel = trials_dict[channel].T
     onset_for_channel = []
     onset_start = int(onset_start)
     onset_stop = int(onset_stop)
@@ -36,22 +36,51 @@ def stimulus_onset_one_channel(data_for_trial_list, channel, onset_start, onset_
     return np.array(onset_for_channel)
 
 
-def zscore_from_baseline(data_for_trial_list, channel, onset_start, onset_stop):
+def zscore_from_baseline(trials_dict, channel, onset_start, onset_stop):
+    """
     
-    onset_data = stimulus_onset_one_channel(data_for_trial_list, channel, onset_start, onset_stop)
+
+    Parameters
+    ----------
+    trials_dict (dict): Trials dictionary that is the length of number of channels and each channel key has its trial matrix (samples, trials)
+    channel (int): Specific channel you want data for.
+    onset_start (int): starting period of the stimulus onset including some ms of baseline before.
+    onset_stop (int): ending period of the stimulus onset including some ms of baseline after.
+
+    Returns
+    -------
+    zscored (array): zscored data for channel.
+
+    """
+    onset_data = stimulus_onset_one_channel(trials_dict, channel, onset_start, onset_stop)
     
     average_onset = np.average(onset_data)
     standard_dev = np.std(onset_data)
     
-    all_data_for_channel = data_for_trial_list[channel].T #returns data for one channel for all trials
+    all_data_for_channel = trials_dict[channel].T #returns data for one channel for all trials
     zscored = (all_data_for_channel - average_onset)/(standard_dev)
         
     return zscored    
 
 
-def get_average_zscore(data_for_trial_list, channel, onset_start, onset_stop):
+def get_average_zscore(trials_dict, channel, onset_start, onset_stop):
+    """
+    
+
+    Parameters
+    ----------
+    trials_dict (dict): Trials dictionary that is the length of number of channels and each channel key has its trial matrix (samples, trials)
+    channel (int): Specific channel you want data for.
+    onset_start (int): starting period of the stimulus onset including some ms of baseline before.
+    onset_stop (int): ending period of the stimulus onset including some ms of baseline after.
+
+    Returns
+    -------
+    mean_zscore (array): mean zscored trial for channel.
+
+    """
  
-    data_for_channel = zscore_from_baseline(data_for_trial_list, channel, onset_start, onset_stop)
+    data_for_channel = zscore_from_baseline(trials_dict, channel, onset_start, onset_stop)
     
     different_format = np.transpose(data_for_channel) #array shape(12000, 60)
 
@@ -69,14 +98,32 @@ def get_average_zscore(data_for_trial_list, channel, onset_start, onset_stop):
     return mean_zscore
 
 
-def get_std(data_for_trial_list, channel, onset_start, onset_stop):
+def zscore_data(trials_mat, num_base_pts=600):
+    """
+    Compute zscore across trial matrix
+        created by Izzy
+    Args:
+        trials_matrix (nparray): Trial matrix of samples x trials of one channel
+        num_base_pts (int, optional): The first num_base_pts are used for baseline. Defaults to 200.
+    Returns:
+            tm_norm_data (nparray): Normalized trial matrix
+
+    Parameters
+    ----------
+    trials_mat (nparray): Trial matrix of samples x trials
+    num_base_pts (int, optional): The first num_base_pts are used for baseline. Defaults to 600.
+
+    Returns
+    -------
+    zscored (array): zscored data for channel.
+
+    """
     
-    data_for_channel = zscore_from_baseline(data_for_trial_list, channel, onset_start, onset_stop)
+    # Zscore the data
+    mean = trials_mat[:num_base_pts].mean(axis=0, keepdims=True)
+    std = trials_mat[:num_base_pts].std(axis=0, keepdims=True)
+    zscored = (trials_mat - mean) / std    
     
-    different_format = np.transpose(data_for_channel)
-    
-    std_trial = np.std(different_format, axis=1)
-    
-    return std_trial
+    return zscored
 
 
