@@ -1,0 +1,35 @@
+# to create a new conda environment, run:
+# >> conda env create -f environment.yml
+# to update your existing conda environment, run:
+# >> conda env update -f environment.yml
+#
+# to create a new environment with a different name, run:
+# >> conda env create --name ENV_NAME --file=environment.yml
+# ----------------------------------------------------------
+name: nsds_nwb
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.7
+  - pip
+  - numpy
+  - scipy
+  - h5py
+  - hdmf
+  - hdf5
+  - pynwb=2.0
+  - pyyaml
+  - imageio
+  - pytest
+  - flake8
+  - pandas
+  - matplotlib
+
+  - pip:
+    - tdt
+    - odfpy
+    - sphinx-rtd-theme
+    - sphinx-gallery
+    - pytest-xdist
+    - process_nwb
