@@ -279,3 +279,49 @@ def plot_trials(X, t, type='shaded_error', stat='median'):
         mean: plots mean trial and computes error using standard error
     """
     raise NotImplementedError
+    
+    ## Using get_ch_trials_matrix as a template but feel free to change anything!!
+    
+    # nsamples = post_buf + pre_buf
+    # ntrials = len(stim_start_times)
+    # trials_mat = np.empty((nsamples, ntrials))
+    # channel_data = signal_data[:, channel]
+    
+    # for idx, onset in enumerate(stim_start_times):
+    #     start_frame, end_frame = onset - pre_buf, onset + post_buf
+    #     trials_mat[:, idx] = channel_data[int(start_frame):int(end_frame)]
+    # return trials_mat
+    
+
+def nwb_stim_t(trials_df, fs):
+    
+    df_s = trials_df[trials_df["sb"] == "s"]
+    
+    onsets = df_s.iloc[:, [0,2]]
+    stim_markers = onsets['start_time'].to_list()
+    stim_onsets = [int(x*fs) for x in stim_markers]
+    stim_start_times = np.array(stim_onsets)
+    
+    offsets = df_s.iloc[:, [1,2]]
+    stim_mrks = offsets['stop_time'].to_list()
+    stim_offsets = [int(x*fs) for x in stim_mrks]
+    stim_stop_times = np.array(stim_offsets)
+    
+    return stim_start_times, stim_stop_times
+
+
+def nwb_baseline_t(trials_df, fs):
+
+    df_b = trials_df[trials_df["sb"] == "b"]
+    
+    b_onsets = df_b.iloc[:, [0,2]]
+    base_markers = b_onsets['start_time'].to_list()
+    base_onsets = [int(x*fs) for x in base_markers]
+    base_start_times = np.array(base_onsets)
+    
+    b_offsets = df_b.iloc[:, [1,2]]
+    base_mrks = b_offsets['stop_time'].to_list()
+    base_offsets = [int(x*fs) for x in base_mrks]
+    base_stop_times = np.array(base_offsets)
+    
+    return base_start_times, base_stop_times
