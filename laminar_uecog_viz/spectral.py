@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from laminar_uecog_viz import utils
 
 
-def plot_spectrogram(W, f, t, colorbar=False, fig=None, ax=None):
+def plot_spectrogram(W, f, t, channel, colorbar=False, fig=None, ax=None):
     """Plot spectrogram given wavelet magnitude coefficents
 
     Parameters
@@ -25,10 +25,21 @@ def plot_spectrogram(W, f, t, colorbar=False, fig=None, ax=None):
     -------
     Tuple
         Matplotlib figure and axes handle
+    
     """
-    fig, ax = utils.check_fig_ax(fig, ax)
+    Wch = W[channel]
+    
+    #fig, ax = utils.check_fig_ax(fig, ax)
+    
+    if fig == None and ax == None:
+        fig, ax = plt.subplots()
+        fig.tight_layout()
+    else:
+        fig, ax = fig, ax 
+        #ax = ax 
+        #fig = fig
 
-    pos = ax.imshow(W.T, interpolation='none', aspect=1/150, vmin=0, vmax=None, cmap='binary',
+    pos = ax.imshow(Wch.T, interpolation='none', aspect=1/150, vmin=0, vmax=None, cmap='binary',
                     origin='lower', extent=[t[0], t[-1], 0, len(f)])
 
     yticks = [10, 30, 75, 150, 300, 600, 1200]
@@ -42,4 +53,4 @@ def plot_spectrogram(W, f, t, colorbar=False, fig=None, ax=None):
                  ax.get_xticklabels() + ax.get_yticklabels()):
         item.set_fontsize(8)
 
-    return fig, ax
+
