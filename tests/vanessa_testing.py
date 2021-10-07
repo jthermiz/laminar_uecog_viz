@@ -15,9 +15,9 @@ from laminar_uecog_viz import plot_trials
 import numpy as np
 import matplotlib.pyplot as plt
 
-data_directory = r'/Users/vanessagutierrez/data/Rat/RVG21/RVG21_B02'
+data_directory = r'/Users/vanessagutierrez/data/Rat/RVG13/RVG13_B04'
 stream = 'Wave'
-stimulus = 'tone_diagnostic'
+stimulus = 'wn2'
 channel_order = [
         81, 83, 85, 87, 89, 91, 93, 95, 97, 105, 98, 106, 114, 122, 113, 121,
         82, 84, 86, 88, 90, 92, 94, 96, 99, 107, 100, 108, 116, 124, 115, 123,
@@ -68,13 +68,14 @@ signal_data, fs, stim_markers, animal_block = rd.get_data()
 marker_onsets, stim_duration = rd.get_stim_onsets()
 
 trials_dict = utils.get_all_trials_matrices(signal_data, marker_onsets, channel_order)
+trials_mat = utils.get_ch_trials_matrix(signal_data, marker_onsets, 2)
 
 onset_start = int((stim_duration-0.05)*fs)
 onset_stop = int((stim_duration+0.05)*fs)
 
 pltz.plot_zscore1(trials_dict, fs, 3, stim_duration, onset_start, onset_stop, fig = None, ax = None)
 
-pltz.plot_zscore2(trials_dict, fs, 3, stim_duration, fig = None, ax = None)
+pltz.plot_zscore2(trials_dict, fs, 64, stim_duration, fig = None, ax = None, num_base_pts=400)
 
 
 
@@ -90,10 +91,11 @@ import numpy as np
 from laminar_uecog_viz import data_reader as dr
 from laminar_uecog_viz import utils
 from pynwb import NWBHDF5IO
+import math
 
 data_directory = r'/Users/vanessagutierrez/data/Rat/RVG21/RVG21_B02'
 stream = 'Wave'
-stimulus = 'tone_diagnostic'
+stimulus = 'wn2'
 
 rd = dr.data_reader(data_directory, stream, stimulus)
 signal_data, fs, stim_markers, animal_block = rd.get_data()
@@ -111,7 +113,7 @@ channel_order = [
         ]
 
 
-io = NWBHDF5IO('/Users/vanessagutierrez/Desktop/NWB_Test/RVG21/RVG21_B02.nwb', 'r')
+io = NWBHDF5IO('/Users/vanessagutierrez/Desktop/NWB_Test/RVG13/RVG13_B04.nwb', 'r')
 nwb = io.read()
 
 nwb_signal_data = nwb.acquisition['ECoG'].data[:]
@@ -120,8 +122,11 @@ fs = nwb.acquisition['ECoG'].rate
 
 trials_df = nwb.trials.to_dataframe()
 
-new_signal_dataa = utils.channel_orderer(nwb_signal_data, channel_order)
+new_signal_data = utils.channel_orderer(nwb_signal_data, channel_order)
 
+
+stim_duration = rd.stim_doc['duration']
+n_timepoints = nwb_signal_data.shape[0]
 
 t = np.arange(0, tend-tbeg)/fs_final
 
@@ -161,7 +166,109 @@ def nwb_baseline_t(trials_df, fs):
 stim_start_times, stim_stop_times = nwb_stim_t(trials_df, fs)    
 base_start_times, base_stop_times = nwb_baseline_t(trials_df, fs)
 
-def get_trials(X, t, stim_start_times, stop_times, baseline_start_times, baseline_stop_times):
+
+
+def get_baseline_ranges(n_timepoints, sampling_rate, stim_onsets):
+    """Return the timepoint ranges for the baseline period.
+    Args:
+        n_timepoints - number of timepoints in the data
+        sampling_rate - sample rate of the data
+    Returns:
+    """
+    # Get the stimulus baseline start and end periods from the block parameters.
+    bl_start_time = rd.stim_doc['baseline_start']
+    bl_end_time = rd.stim_doc['baseline_end']
+    # Get the stimulus duration in # of mark samples
+    stim_dur = math.ceil(rd.stim_doc['duration']*sampling_rate)
+    # Get the duration of the baseline period in # of mark samples
+    bl_duration = math.ceil(bl_end_time*sampling_rate - bl_start_time*sampling_rate)
+    # Compute baseline start periods.
+    bl_start = stim_onsets + stim_dur + math.floor(bl_start_time*sampling_rate)
+    # Compute baseline end periods.
+    bl_end = bl_start + bl_duration
+    bl_end[bl_end > n_timepoints] = n_timepoints
+
+    return bl_start.astype(int), bl_end.astype(int)
+
+
+bl_start, bl_end = get_baseline_ranges(n_timepoints, fs, stim_start_times)
+
+
+def get_baseline(signal_data, sampling_rate, stim_start_times, bl_start, bl_end, include_ends=True):
+    """Return the baseline timepoints for Z-Scoring
+    Args:
+        data - data array of shape (n_timepoints, n_channels, ...)
+    Return:
+    """
+    n_timepoints = signal_data.shape[0]
+
+    stim_onsets = stim_start_times
+
+    # Get the baseline time period.
+    bl_start, bl_end = bl_start, bl_end
+
+    # If include_ends==True, append the beginning and end periods.
+    if include_ends:
+        #Add the period before the first stimulus
+        if bl_start[0] > 0:
+            bl_start = np.append(0,bl_start)
+            bl_end = np.append(stim_onsets[0],bl_end)
+        #Add the period after the last stimulus
+        if bl_end[-1] < n_timepoints:
+            bl_start = np.append(bl_start,bl_end[-1])
+            bl_end = np.append(bl_end,n_timepoints)
+
+    # Collect and append the baseline samples from data
+    #print([np.sum(bl_end-bl_start)]+list(data.shape[1:]))
+
+    n_bl_timepoints = np.sum(bl_end - bl_start)
+    baseline = np.zeros([n_bl_timepoints] + list(signal_data.shape[1:]),
+                        dtype=signal_data.dtype)
+
+    ind = 0
+    for s in np.arange(bl_start.size):
+        # Select the baseline sample from bl_start and bl_end
+        bl_sample = np.array(signal_data[bl_start[s]:bl_end[s],...])
+        # Find the baseline sample length
+        bl_s_len = bl_sample.shape[0]
+        # Copy the baseline sample into the aggregate baseline
+        baseline[ind:(ind+bl_s_len),...] =  bl_sample
+        # Increment the index by the length of the baseline sample
+        ind = ind+bl_s_len
+
+    return baseline
+
+n_bl_timepoints = np.sum(bl_end - bl_start)
+
+baseline_data = get_baseline(nwb_signal_data, fs, stim_start_times, bl_start, bl_end, include_ends=False)
+
+
+def _zscore(self, data, baseline_data):
+    """Z-score data using the a baseline period.
+    Args:
+        data (float, ndarray)
+        baseline_data
+    Returns:
+    """
+    # Find the number of timepoints in data.
+    n_timepoints = data.shape[0]
+
+    # Find the mean and standard deviation of the baseline data across time.
+    bl_mu = np.mean(np.abs(baseline_data),axis=0)
+    bl_std = np.std(baseline_data,axis=0)
+    # Repeat the matrix to have the same shape as data
+    bl_mu = np.array([bl_mu for i in np.arange(n_timepoints)])
+    bl_std = np.array([bl_std for i in np.arange(n_timepoints)])
+
+    # Z-score
+    data = np.abs(data) - bl_mu
+    data = data / bl_std
+
+    return data
+    
+    
+
+def get_trials(signal_data, channel, stim_start_times, baseline_start_times):
     """Convert N-D array into N-D + 1 set of trial arrays
 
     Parameters
@@ -184,7 +291,10 @@ def get_trials(X, t, stim_start_times, stop_times, baseline_start_times, baselin
     NotImplementedError
         [description]
     """
-    raise NotImplementedError
+    # raise NotImplementedError
+    
+    pre_buf =  (stim_start_times[2] - base_start_times[1])+1400
+    post_buf = pre_buf
     
     nsamples = post_buf + pre_buf
     ntrials = len(stim_start_times)
@@ -195,9 +305,40 @@ def get_trials(X, t, stim_start_times, stop_times, baseline_start_times, baselin
         start_frame, end_frame = onset - pre_buf, onset + post_buf
         trials_mat[:, idx] = channel_data[int(start_frame):int(end_frame)]
     return trials_mat
+
+trials_mat = get_trials(nwb_signal_data, 2, stim_start_times, stim_stop_times, base_start_times, base_stop_times)
     
 
+def get_all_trials_dict(signal_data, channel_order, stim_start_times, baseline_start_times):
+    """
+    Python dictionary where the key is the channel and the value is the trial matrix for that channel
+    now, instead of calling get_trials_matrix a multiple of times when we want to visualize, we can 
+    iterate over the keys in the all_trials matrix 
 
+    Parameters
+    ----------
+    signal_data (np.array): signal data (nsamples, nchannels).
+    marker_onsets (list): List of trial sitmulus onsets in samples.
+    channel_order (list): List of channel order on ECoG array or laminar probe.
+    pre_buf (int, optional): Number of samples to pull prior to baseline. Defaults to 10000.
+    post_buf (int, optional): Number of samples to pull after. Defaults to 10000.
+
+    Returns
+    -------
+    trials_dict (dict): Trials dictionary that is the length of channel_order. Each channel key has its trial matrix (samples, trials).
+    """
+    
+    all_trials = {}
+    for i in np.arange(len(channel_order)):
+        one_channel = get_trials(signal_data, i, stim_start_times, baseline_start_times)
+        all_trials[channel_order[i]] = one_channel
+    trials_dict = all_trials
+    return trials_dict
+
+
+trials_dict = get_all_trials_dict(new_signal_data, channel_order, stim_start_times, base_start_times)
+
+pltz.plot_zscore2(trials_dict, fs, 64, stim_duration, fig = None, ax = None, num_base_pts=8000, std_error = False, trials = True
 def get_ch_trials_matrix(signal_data, marker_onsets, channel, pre_buf = 10000, post_buf = 10000):
     
     """

@@ -46,6 +46,7 @@ def check_fig_ax(fig, ax):
     """
     if (ax is None) or (fig is None):
         fig, ax = plt.subplots(1, 1)
+        fig.tight_layout()
     return fig, ax
 
 
@@ -76,8 +77,8 @@ def axes_grid(rows, cols, figsize=(8, 8), xlabel=None, ylabel=None, plot_type=No
     if plot_type is True:
         fig.suptitle('{} Across Channels'.format(plot_type), fontsize = 20, y = 1)
     
-    fig.supylabel(ylabel, fontsize = 10)
-    fig.supxlabel(xlabel, fontsize = 10)
+    # fig.supylabel(ylabel, fontsize = 10)
+    # fig.supxlabel(xlabel, fontsize = 10)
     
     
     row_col = list(itertools.product(range(rows), range(cols)))
