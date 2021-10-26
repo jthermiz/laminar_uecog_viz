@@ -32,7 +32,7 @@ class data_reader:
         self.data_directory = data_directory
         self.stream = stream
         self.stimulus = stimulus
-        
+       
         def open_yaml(stimulus):
             with open('stimulus_yamls/{}.yaml'.format(stimulus), 'r') as file:
                 stim_doc = yaml.full_load(file)

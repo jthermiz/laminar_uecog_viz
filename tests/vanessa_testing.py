@@ -15,6 +15,11 @@ from laminar_uecog_viz import plot_trials
 import numpy as np
 import matplotlib.pyplot as plt
 
+X = np.random.rand(1126, 128, 60, 54)
+plt.plot(X[:, 0, :, 0])
+
+testX = np.random.rand(29126, 128, 54)
+
 data_directory = r'/Users/vanessagutierrez/data/Rat/RVG13/RVG13_B04'
 stream = 'Wave'
 stimulus = 'wn2'
@@ -93,7 +98,7 @@ from laminar_uecog_viz import utils
 from pynwb import NWBHDF5IO
 import math
 
-data_directory = r'/Users/vanessagutierrez/data/Rat/RVG21/RVG21_B02'
+data_directory = r'/Users/vanessagutierrez/data/Rat/RVG21/RVG21_B01'
 stream = 'Wave'
 stimulus = 'wn2'
 
@@ -115,6 +120,8 @@ channel_order = [
 
 io = NWBHDF5IO('/Users/vanessagutierrez/Desktop/NWB_Test/RVG13/RVG13_B04.nwb', 'r')
 nwb = io.read()
+
+io.close()
 
 nwb_signal_data = nwb.acquisition['ECoG'].data[:]
 
@@ -338,7 +345,8 @@ def get_all_trials_dict(signal_data, channel_order, stim_start_times, baseline_s
 
 trials_dict = get_all_trials_dict(new_signal_data, channel_order, stim_start_times, base_start_times)
 
-pltz.plot_zscore2(trials_dict, fs, 64, stim_duration, fig = None, ax = None, num_base_pts=8000, std_error = False, trials = True
+pltz.plot_zscore2(trials_dict, fs, 64, stim_duration, fig = None, ax = None, num_base_pts=8000, std_error = False, trials = True)
+
 def get_ch_trials_matrix(signal_data, marker_onsets, channel, pre_buf = 10000, post_buf = 10000):
     
     """
@@ -359,13 +367,17 @@ def get_ch_trials_matrix(signal_data, marker_onsets, channel, pre_buf = 10000, p
     
     nsamples = post_buf + pre_buf
     ntrials = len(marker_onsets)
-    trials_mat = np.empty((nsamples, ntrials))
-    channel_data = signal_data[:, channel]
+    nfreqs = signal_data.shape[2]
+    trials_mat = np.empty((nsamples, ntrials, nfreqs))
+    channel_data = signal_data[:, channel, :]
+    print(channel_data.shape)
     
     for idx, marker in enumerate(marker_onsets):
         start_frame, end_frame = marker - pre_buf, marker + post_buf
-        trials_mat[:, idx] = channel_data[int(start_frame):int(end_frame)]
+        trials_mat[:, idx, :] = channel_data[int(start_frame):int(end_frame)]
     return trials_mat
+
+onech_trials = get_ch_trials_matrix(testX, marker_onsets, 5, pre_buf = 10000, post_buf = 10000)
 
 def get_all_trials_matrices(signal_data, marker_onsets, channel_order, pre_buf = 10000, post_buf = 10000):
     """
