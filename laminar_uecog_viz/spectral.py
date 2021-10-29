@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from laminar_uecog_viz import utils
 
-
+#channel
 def plot_spectrogram(W, f, t, colorbar=False, fig=None, ax=None):
     """Plot spectrogram given wavelet magnitude coefficents
 
@@ -25,8 +25,19 @@ def plot_spectrogram(W, f, t, colorbar=False, fig=None, ax=None):
     -------
     Tuple
         Matplotlib figure and axes handle
+    
     """
+    #Wch = W[channel]
+    
     fig, ax = utils.check_fig_ax(fig, ax)
+    
+    if fig == None and ax == None:
+        fig, ax = plt.subplots()
+        fig.tight_layout()
+    else:
+        fig, ax = fig, ax 
+        #ax = ax 
+        #fig = fig
 
     pos = ax.imshow(W.T, interpolation='none', aspect=1/150, vmin=0, vmax=None, cmap='binary',
                     origin='lower', extent=[t[0], t[-1], 0, len(f)])
@@ -34,6 +45,9 @@ def plot_spectrogram(W, f, t, colorbar=False, fig=None, ax=None):
     yticks = [10, 30, 75, 150, 300, 600, 1200]
     positions = [np.argmin(np.abs(v - f)) for v in yticks]
     plt.yticks(positions, yticks)
+    
+    ax.set_xlabel('Time (sec)')
+    ax.set_ylabel('Frequency (Hz)')
 
     if colorbar:
         cbar = fig.colorbar(pos, ax=ax)
@@ -42,4 +56,4 @@ def plot_spectrogram(W, f, t, colorbar=False, fig=None, ax=None):
                  ax.get_xticklabels() + ax.get_yticklabels()):
         item.set_fontsize(8)
 
-    return fig, ax
+    #return fig, ax

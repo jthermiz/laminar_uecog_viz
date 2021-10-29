@@ -87,7 +87,7 @@ def plot_zscore1(trials_dict, fs, channel, stim_duration, onset_start, onset_sto
     # fig.savefig("{}/{}_Zscore_Ch.{}_{}.png".format(self.savepic, self.animal_block, channel, self.stream), dpi=300)
     
 
-def plot_zscore2(trials_dict, fs, channel, stim_duration, fig = None, ax = None, labels = True):
+def plot_zscore2(trials_dict, fs, channel, stim_duration, fig = None, ax = None, labels = True, num_base_pts=600, std_error = True, trials = False):
     """
     
     Parameters
@@ -116,7 +116,7 @@ def plot_zscore2(trials_dict, fs, channel, stim_duration, fig = None, ax = None,
         
     
     # rect = (0.04, 0.04, 1, 0.95)    
-    x_axis = np.linspace(-10000, 10000, len(trials_mat))
+    x_axis = np.linspace(-5000, 5000, len(trials_mat))
     # x_axis = np.linspace(-5000, 500, len(trials_mat)) #wave tonediag
     #x_axis = np.linspace(-10000, 5500, 20000)  #poly tonediag
     x_axis = (x_axis/fs) * 1000
@@ -124,7 +124,7 @@ def plot_zscore2(trials_dict, fs, channel, stim_duration, fig = None, ax = None,
     ax.set_xlim(-150, 150)
     # ax.set_xlim(-100, 100)
     
-    data_for_channel_zscored = gz.zscore_data(trials_mat)
+    data_for_channel_zscored = gz.zscore_data(trials_mat, num_base_pts)
     average_for_channel = np.mean(data_for_channel_zscored, axis = 1)
         
     stim_stop = stim_duration *1000
@@ -135,15 +135,23 @@ def plot_zscore2(trials_dict, fs, channel, stim_duration, fig = None, ax = None,
     
     zscored_data = data_for_channel_zscored.T
     
-    
-    num_trials = data_for_channel_zscored.shape[1]
-    mean = np.mean(data_for_channel_zscored, axis = -1)
-            
-    standard_dev = np.std(data_for_channel_zscored, axis = -1)
-    sqrt_n = np.sqrt(num_trials)
-    standard_error = standard_dev/sqrt_n
-    ax.fill_between(x_axis, mean - standard_error, mean + standard_error, color = 'k', alpha = .3)
+    if std_error:
+        num_trials = data_for_channel_zscored.shape[1]
+        mean = np.mean(data_for_channel_zscored, axis = -1)
                 
+        standard_dev = np.std(data_for_channel_zscored, axis = -1)
+        sqrt_n = np.sqrt(num_trials)
+        standard_error = standard_dev/sqrt_n
+        ax.fill_between(x_axis, mean - standard_error, mean + standard_error, color = 'k', alpha = .3)
+    
+    if trials:        
+        trial_mat = np.zeros((len(trials_mat), trials_mat.shape[1]))
+        
+        for tidx, trial in enumerate(trials_mat.T):
+            sub_trial = trial[:]
+            trial_mat[:, tidx] = sub_trial
+            ax.plot(x_axis, sub_trial, color = (.85, .85, .85), linewidth = 0.5)
+    
     ax.plot(x_axis, average_for_channel, color = 'k', linewidth= 2, zorder = 9)
     ax.axvline(x= 0, ymin=min(zscored_data.flatten()), ymax=max(zscored_data.flatten()), color = 'darksalmon', zorder = 11, linestyle='--')
             
