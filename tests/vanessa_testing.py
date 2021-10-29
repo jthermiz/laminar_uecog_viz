@@ -135,7 +135,7 @@ new_signal_data = utils.channel_orderer(nwb_signal_data, channel_order)
 stim_duration = rd.stim_doc['duration']
 n_timepoints = nwb_signal_data.shape[0]
 
-t = np.arange(0, tend-tbeg)/fs_final
+#t = np.arange(0, tend-tbeg)/fs_final
 
 def nwb_stim_t(trials_df, fs):
     
